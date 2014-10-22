@@ -188,7 +188,7 @@ void CascadeHasher::MatchImages(const HashedImage& hashed_image1,
       continue;
     }
 
-    const int num_nearest_neighbors = std::max(
+    const int num_nearest_neighbors = std::min(
         static_cast<int>(candidate_descriptors.size()), kNumTopCandidates);
 
     // Compute the hamming distance of all candidates based on the comp hash
