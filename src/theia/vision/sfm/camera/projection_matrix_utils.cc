@@ -123,8 +123,13 @@ bool ComposeProjectionMatrix(const Matrix3d& calibration_matrix,
                              const Vector3d& position,
                              Matrix3x4d* pmatrix) {
   const double rotation_angle = rotation.norm();
-  pmatrix->block<3, 3>(0, 0) = Eigen::AngleAxisd(
-              rotation_angle, rotation / rotation_angle).toRotationMatrix();
+  if (rotation_angle == 0) {
+    pmatrix->block<3, 3>(0, 0) = Matrix3d::Identity();
+  } else {
+    pmatrix->block<3, 3>(0, 0) = Eigen::AngleAxisd(
+        rotation_angle, rotation / rotation_angle).toRotationMatrix();
+  }
+
   pmatrix->col(3) = - (pmatrix->block<3, 3>(0, 0) *  position);
   *pmatrix = calibration_matrix * (*pmatrix);
   return true;

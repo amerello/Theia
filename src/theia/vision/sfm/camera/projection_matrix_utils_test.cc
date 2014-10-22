@@ -102,6 +102,18 @@ TEST(DecomposeProjectMatrix, Random) {
   }
 }
 
+TEST(ComposeProjectionMatrix, Identity) {
+  const Matrix3d calibration_matrix = Matrix3d::Identity();
+  const Vector3d rotation = Vector3d::Zero();
+  const Vector3d position = Vector3d::Zero();
+  Matrix3x4d projection_matrix;
+  EXPECT_TRUE(ComposeProjectionMatrix(calibration_matrix,
+                                      rotation,
+                                      position,
+                                      &projection_matrix));
+  EXPECT_TRUE(projection_matrix == Matrix3x4d::Identity());
+}
+
 TEST(ComposeProjectionMatrix, Random) {
   for (int i = 0; i < 1000; i++) {
     const Vector3d rotation = Vector3d::Random();
