@@ -208,10 +208,8 @@ macro(OptimizeTheiaCompilerFlags)
     # Newer versions of GCC are sometimes too strict!
     IF (CMAKE_COMPILER_IS_GNUCXX)
       # Linux
-      IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-        IF (NOT GCC_VERSION VERSION_LESS 4.8)
-          SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comment -Wno-unused-variable -Wno-unused-result -Wno-unused-but-set-variable")
-	ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+      IF (NOT GCC_VERSION VERSION_LESS 4.8)
+        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comment -Wno-unused-variable -Wno-unused-result -Wno-unused-but-set-variable")
       ENDIF (NOT GCC_VERSION VERSION_LESS 4.8)
     ENDIF (CMAKE_COMPILER_IS_GNUCXX)
   ENDIF (UNIX)
