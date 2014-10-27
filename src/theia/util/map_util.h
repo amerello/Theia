@@ -215,6 +215,14 @@ void InsertOrDie(Collection* const collection,
       << "duplicate key: " << key;
 }
 
+template <class Collection>
+void InsertOrDieNoPrint(Collection* const collection,
+                 const typename Collection::value_type::first_type& key,
+                 const typename Collection::value_type::second_type& data) {
+  typedef typename Collection::value_type value_type;
+  CHECK(collection->insert(value_type(key, data)).second);
+}
+
 }  // namespace theia
 
 #endif  // THEIA_UTIL_MAP_UTIL_H_

@@ -32,49 +32,52 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_VISION_SFM_FEATURE_H_
-#define THEIA_VISION_SFM_FEATURE_H_
+#ifndef THEIA_VISION_SFM_TRACK_BUILDER_H_
+#define THEIA_VISION_SFM_TRACK_BUILDER_H_
 
-#include <functional>
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <unordered_map>
 #include <utility>
 
-#include "theia/util/hash.h"
-#include "theia/vision/sfm/types.h"
+#include "theia/vision/sfm/feature.h"
 
 namespace theia {
 
-// A small struct to hold the location of feature points in a view. We assume
-// that the Views, Tracks, and track builders will keep track of the
-// id. Features must correspond to a track (this helps with memory and
-// efficiency) but Features do not hold their descriptors for memory purposes
-// (typically descriptor information is disregarded after track generation).
-struct Feature {
-  Feature() {}
-  Feature(const TrackId track_id, const float x, const float y)
-      : track_id(track_id), x(x), y(y) {}
+template <typename T> class ConnectedComponents;
+class Model;
 
-  bool operator==(const Feature& feature) const {
-    return track_id == feature.track_id && x == feature.x && y == feature.y;
-  }
+// Build tracks from feature correspondences across multiple images. Tracks are
+// created with the connected components algorithm and have a maximum allowable
+// size. If there are multiple features from one image in a track, we do not do
+// any intelligent selection and just arbitrarily choose a feature to drop so
+// that the tracks are consistent.
+class TrackBuilder {
+ public:
+  typedef std::pair<std::string, Feature> ImageNameFeaturePair;
 
-  TrackId track_id = kInvalidTrackId;
-  float x;
-  float y;
+  explicit TrackBuilder(const int max_track_length);
+
+  ~TrackBuilder();
+
+  // Adds a feature correspondence between two images.
+  void AddFeatureCorrespondence(const std::string& image_name1,
+                                const Feature& feature1,
+                                const std::string& image_name2,
+                                const Feature& feature2);
+
+  // Generates all tracks and adds them to the model.
+  void BuildTracks(Model* model);
+
+ private:
+  size_t FindOrInsert(const ImageNameFeaturePair& image_feature);
+
+  std::unordered_map<ImageNameFeaturePair, size_t> features_;
+  std::unique_ptr<ConnectedComponents<size_t> > connected_components_;
+  size_t num_features_;
 };
 
 }  // namespace theia
 
-// Hashing function for the Feature struct.
-// NOTE: This does not utilize the track id so it may not be the best hashing
-// function.
-namespace std {
-template <> struct hash<theia::Feature> {
-  size_t operator()(const theia::Feature& feature) const {
-    hash<std::pair<float, float> > h1;
-    return h1(std::make_pair(feature.x, feature.y));
-  }
-};
-
-}  // namespace std
-
-#endif  // THEIA_VISION_SFM_FEATURE_H_
+#endif  // THEIA_VISION_SFM_TRACK_BUILDER_H_
