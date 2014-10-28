@@ -164,7 +164,7 @@ BENCHMARK(NormalizedEightPoint, Benchmark, 100, 1000) {
   BasicNormalizedTest();
 }
 
-TEST(NormalizedEightPoint, NoiseTest) {
+TEST(NormalizedEightPoint, MinimalNoiseTest) {
   const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
                                             Vector3d(1.0, -1.0, 2.0),
                                             Vector3d(-1.0, 1.0, 2.0),
@@ -173,6 +173,30 @@ TEST(NormalizedEightPoint, NoiseTest) {
                                             Vector3d(1.0, -2.0, 1.0),
                                             Vector3d(-1.0, 4.0, 2.0),
                                             Vector3d(-2.0, 2.0, 3.0)
+  };
+
+  const Quaterniond soln_rotation(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+  const Vector3d soln_translation(1.0, 0.5, 0.0);
+  const double kNoise = 1.0 / 512.0;
+  const double kMaxReprojectionError = 1e-4;
+
+  EightPointNormalizedWithNoiseTest(points_3d, kNoise, soln_rotation,
+                                    soln_translation, kMaxReprojectionError);
+}
+
+TEST(NormalizedEightPoint, OverconstrainedNoiseTest) {
+  const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0),
+                                            Vector3d(-1.0, -3.0, 2.0),
+                                            Vector3d(1.0, -2.0, 1.0),
+                                            Vector3d(-1.0, 4.0, 2.0),
+                                            Vector3d(-2.0, 2.0, 3.0),
+                                            Vector3d(-2.0, 4.0, 1.0),
+                                            Vector3d(-2.0, 2.0, 2.0),
+                                            Vector3d(-4.0, 3.0, 3.0),
   };
 
   const Quaterniond soln_rotation(

@@ -76,8 +76,16 @@ bool NormalizedEightPoint(const std::vector<Vector2d>& image_1_points,
   }
 
   // Solve the constraint equation for F from nullspace extraction.
-  const Matrix<double, 9, 1> normalized_fvector =
-      constraint_matrix.fullPivLu().kernel();
+  // An LU decomposition is efficient for the minimally constrained case.
+  // Otherwise, use an SVD.
+  Matrix<double, 9, 1> normalized_fvector;
+  if (image_1_points.size() == 8) {
+    normalized_fvector = constraint_matrix.fullPivLu().kernel();
+  } else {
+    JacobiSVD<Matrix<double, Eigen::Dynamic, 9> > cmatrix_svd(
+       constraint_matrix, Eigen::ComputeFullV);
+    normalized_fvector = cmatrix_svd.matrixV().col(8);
+  }
 
   // NOTE: This is the transpose of a valid fundamental matrix! We implement a
   // "lazy" transpose and defer it to the SVD a few lines below.
