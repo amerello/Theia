@@ -79,6 +79,7 @@ SET(THEIA_SRC
   vision/sfm/pose/three_point_relative_pose_partial_rotation.cc
   vision/sfm/pose/util.cc
   vision/sfm/track.cc
+  vision/sfm/track_builder.cc
   vision/sfm/transformation/align_point_clouds.cc
   vision/sfm/transformation/gdls_similarity_transform.cc
   vision/sfm/triangulation/triangulation.cc
@@ -176,6 +177,7 @@ IF (BUILD_TESTING)
   GTEST(vision/sfm/pose/perspective_three_point)
   GTEST(vision/sfm/pose/three_point_relative_pose_partial_rotation)
   GTEST(vision/sfm/track)
+  GTEST(vision/sfm/track_builder)
   GTEST(vision/sfm/transformation/align_point_clouds)
   GTEST(vision/sfm/transformation/gdls_similarity_transform)
   GTEST(vision/sfm/triangulation/triangulation)

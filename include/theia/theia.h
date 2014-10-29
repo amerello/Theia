@@ -111,6 +111,7 @@
 #include "theia/vision/sfm/pose/three_point_relative_pose_partial_rotation.h"
 #include "theia/vision/sfm/pose/util.h"
 #include "theia/vision/sfm/track.h"
+#include "theia/vision/sfm/track_builder.h"
 #include "theia/vision/sfm/transformation/align_point_clouds.h"
 #include "theia/vision/sfm/transformation/gdls_similarity_transform.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
