@@ -93,6 +93,7 @@
 #include "theia/vision/sfm/camera/project_point_to_image.h"
 #include "theia/vision/sfm/camera/projection_matrix_utils.h"
 #include "theia/vision/sfm/camera/radial_distortion.h"
+#include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
 #include "theia/vision/sfm/feature.h"
 #include "theia/vision/sfm/model.h"
 #include "theia/vision/sfm/pose/dls_impl.h"

@@ -41,10 +41,9 @@
 
 #include "theia/math/util.h"
 #include "theia/util/random.h"
-#include "theia/vision/sfm/pose/five_point_relative_pose.h"
+#include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
 #include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/pose/util.h"
-#include "theia/test/benchmark.h"
 #include "theia/test/test_utils.h"
 
 namespace theia {
@@ -60,40 +59,28 @@ using Eigen::Vector3d;
 // errors of the returned solutions and ensuring that at least one of the
 // candidate solutions corresponds to the essential matrix we used to construct
 // the problem.
-void TestFivePointResultWithNoise(const Vector3d points_3d[5],
-                                  const double projection_noise_std_dev,
+void TestEssentialMatrixEstimator(const Vector3d points_3d[5],
                                   const Matrix3d& expected_rotation,
                                   const Vector3d& expected_translation,
                                   const double ematrix_tolerance) {
   InitRandomGenerator();
 
   // Calculates the image points in both views.
-  Vector2d view_one_points[5];
-  Vector2d view_two_points[5];
+  std::vector<FeatureCorrespondence> features(5);
   for (int i = 0; i < 5; ++i) {
     const Vector3d proj_3d =
         expected_rotation * points_3d[i] + expected_translation;
-    view_one_points[i] = points_3d[i].hnormalized();
-    view_two_points[i] = proj_3d.hnormalized();
-  }
-
-  if (projection_noise_std_dev) {
-    // Adds noise to both of the points.
-    for (int i = 0; i < 5; ++i) {
-      AddNoiseToProjection(projection_noise_std_dev,
-                           &view_one_points[i]);
-      AddNoiseToProjection(projection_noise_std_dev,
-                           &view_two_points[i]);
-    }
+    features[i].feature1 = points_3d[i].hnormalized();
+    features[i].feature2 = proj_3d.hnormalized();
   }
 
   // Calculates the essential matrix, this may return multiple solutions.
   const Matrix3d gt_ematrix =
       CrossProductMatrix(expected_translation) * expected_rotation;
+
+  EssentialMatrixEstimator ematrix_estimator;
   std::vector<Matrix3d> soln_ematrices;
-  EXPECT_TRUE(FivePointRelativePose(view_one_points,
-                                    view_two_points,
-                                    &soln_ematrices));
+  EXPECT_TRUE(ematrix_estimator.EstimateModel(features, &soln_ematrices));
   CHECK_GT(soln_ematrices.size(), 0);
 
   // Among the returned solutions verify that at least one is close to the
@@ -103,10 +90,14 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   for (int n = 0; n < soln_ematrices.size(); ++n) {
     // All solutions should have valid epipolar constraints.
     for (int i = 0; i < 5; i++) {
-      EXPECT_LT(SquaredSampsonDistance(soln_ematrices[n],
-                                       view_one_points[i],
-                                       view_two_points[i]),
-                kEpipolarTolerance);
+      const double gt_error = SquaredSampsonDistance(
+          soln_ematrices[n],
+          features[i].feature1,
+          features[i].feature2);
+      const double estimated_error = ematrix_estimator.Error(features[i],
+                                                             soln_ematrices[n]);
+      EXPECT_DOUBLE_EQ(estimated_error, gt_error);
+      EXPECT_LT(estimated_error, kEpipolarTolerance);
     }
 
     if (test::ArraysEqualUpToScale(9, soln_ematrices[n].data(),
@@ -118,7 +109,7 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
 }
 
 
-void BasicTest() {
+TEST(EssentialMatrixEstimator, BasicTest) {
   // Ground truth essential matrix.
   const Vector3d points_3d[5] = { Vector3d(-1.0, 3.0, 3.0),
                                   Vector3d(1.0, -1.0, 2.0),
@@ -128,78 +119,8 @@ void BasicTest() {
   const Matrix3d soln_rotation = Quaterniond(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
   const Vector3d soln_translation(1.0, 1.0, 1.0);
-  const double kNoise = 0.0 / 512.0;
   const double kEMatrixTolerance = 1e-4;
-  TestFivePointResultWithNoise(points_3d,
-                               kNoise,
-                               soln_rotation,
-                               soln_translation,
-                               kEMatrixTolerance);
-}
-
-TEST(FivePointRelativePose, Basic) {
-  BasicTest();
-}
-
-BENCHMARK(FivePointRelativePose, BasicBenchmark, 100, 1000) {
-  BasicTest();
-}
-
-TEST(FivePointRelativePose, NoiseTest) {
-  // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.5),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
-  const Matrix3d soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
-
-  const Vector3d soln_translation(1.0, 1.0, 1.0);
-  const double kNoise = 1.0 / 512.0;
-  const double kEMatrixTolerance = 1e-2;
-  TestFivePointResultWithNoise(points_3d,
-                               kNoise,
-                               soln_rotation,
-                               soln_translation,
-                               kEMatrixTolerance);
-}
-
-TEST(FivePointRelativePose, ForwardMotion) {
-  // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.0),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
-  const Matrix3d soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
-
-  const Vector3d soln_translation(0.0, 0.0, 1.0);
-  const double kNoise = 1.0 / 512.0;
-  const double kEMatrixTolerance = 0.15;
-  TestFivePointResultWithNoise(points_3d,
-                               kNoise,
-                               soln_rotation,
-                               soln_translation,
-                               kEMatrixTolerance);
-}
-
-TEST(FivePointRelativePose, NoRotation) {
-  // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.0),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
-  const Matrix3d soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(0.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
-
-  const Vector3d soln_translation(1.0, 1.0, 1.0);
-  const double kNoise = 1.0 / 512.0;
-  const double kEMatrixTolerance = 0.01;
-  TestFivePointResultWithNoise(points_3d,
-                               kNoise,
+  TestEssentialMatrixEstimator(points_3d,
                                soln_rotation,
                                soln_translation,
                                kEMatrixTolerance);
