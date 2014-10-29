@@ -32,36 +32,40 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
+#include "theia/vision/sfm/estimators/fundamental_matrix_estimator.h"
 
 #include <Eigen/Core>
 #include <vector>
 
 #include "theia/solvers/estimator.h"
-#include "theia/vision/sfm/feature_correspondence.h"
-#include "theia/vision/sfm/pose/five_point_relative_pose.h"
+#include "theia/vision/sfm/pose/eight_point_fundamental_matrix.h"
 #include "theia/vision/sfm/pose/util.h"
 
 namespace theia {
 
-bool EssentialMatrixEstimator::EstimateModel(
+bool FundamentalMatrixEstimator::EstimateModel(
     const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<Eigen::Matrix3d>* essential_matrices) const {
-  Eigen::Vector2d image1_points[5], image2_points[5];
-  for (int i = 0; i < 5; i++) {
-    image1_points[i] = correspondences[i].feature1;
-    image2_points[i] = correspondences[i].feature2;
+    std::vector<Eigen::Matrix3d>* fundamental_matrices) const {
+  std::vector<Eigen::Vector2d> image1_points, image2_points;
+  for (int i = 0; i < 8; i++) {
+    image1_points.emplace_back(correspondences[i].feature1);
+    image2_points.emplace_back(correspondences[i].feature2);
   }
 
-  return FivePointRelativePose(image1_points,
-                               image2_points,
-                               essential_matrices);
+  Eigen::Matrix3d fmatrix;
+  if (!NormalizedEightPointFundamentalMatrix(
+          image1_points, image2_points, &fmatrix)) {
+    return false;
+  }
+
+  fundamental_matrices->emplace_back(fmatrix);
+  return true;
 }
 
-double EssentialMatrixEstimator::Error(
+double FundamentalMatrixEstimator::Error(
     const FeatureCorrespondence& correspondence,
-    const Eigen::Matrix3d& essential_matrix) const {
-  return SquaredSampsonDistance(essential_matrix,
+    const Eigen::Matrix3d& fundamental_matrix) const {
+  return SquaredSampsonDistance(fundamental_matrix,
                                 correspondence.feature1,
                                 correspondence.feature2);
 }

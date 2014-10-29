@@ -51,9 +51,10 @@ using Eigen::Matrix;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-bool NormalizedEightPoint(const std::vector<Vector2d>& image_1_points,
-                          const std::vector<Vector2d>& image_2_points,
-                          Matrix3d* fundamental_matrix) {
+bool NormalizedEightPointFundamentalMatrix(
+    const std::vector<Vector2d>& image_1_points,
+    const std::vector<Vector2d>& image_2_points,
+    Matrix3d* fundamental_matrix) {
   CHECK_EQ(image_1_points.size(), image_2_points.size());
   CHECK_GE(image_1_points.size(), 8);
 

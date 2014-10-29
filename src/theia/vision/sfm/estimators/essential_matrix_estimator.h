@@ -40,13 +40,9 @@
 
 #include "theia/solvers/estimator.h"
 #include "theia/util/util.h"
+#include "theia/vision/sfm/feature_correspondence.h"
 
 namespace theia {
-
-struct FeatureCorrespondence {
-  Eigen::Vector2d feature1;
-  Eigen::Vector2d feature2;
-};
 
 // An estimator for computing the essential matrix from 5 feature
 // correspondences. The feature correspondences should be normalized

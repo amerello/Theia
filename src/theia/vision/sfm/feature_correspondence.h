@@ -32,38 +32,20 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
+#ifndef THEIA_VISION_SFM_FEATURE_CORRESPONDENCE_H_
+#define THEIA_VISION_SFM_FEATURE_CORRESPONDENCE_H_
 
 #include <Eigen/Core>
-#include <vector>
-
-#include "theia/solvers/estimator.h"
-#include "theia/vision/sfm/feature_correspondence.h"
-#include "theia/vision/sfm/pose/five_point_relative_pose.h"
-#include "theia/vision/sfm/pose/util.h"
 
 namespace theia {
 
-bool EssentialMatrixEstimator::EstimateModel(
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<Eigen::Matrix3d>* essential_matrices) const {
-  Eigen::Vector2d image1_points[5], image2_points[5];
-  for (int i = 0; i < 5; i++) {
-    image1_points[i] = correspondences[i].feature1;
-    image2_points[i] = correspondences[i].feature2;
-  }
+// The feature location of two correspondences. These can be pixel coordinates
+// or normalized coordinates.
+struct FeatureCorrespondence {
+  Eigen::Vector2d feature1;
+  Eigen::Vector2d feature2;
+};
 
-  return FivePointRelativePose(image1_points,
-                               image2_points,
-                               essential_matrices);
-}
+}  // namespace std
 
-double EssentialMatrixEstimator::Error(
-    const FeatureCorrespondence& correspondence,
-    const Eigen::Matrix3d& essential_matrix) const {
-  return SquaredSampsonDistance(essential_matrix,
-                                correspondence.feature1,
-                                correspondence.feature2);
-}
-
-}  // namespace theia
+#endif  // THEIA_VISION_SFM_FEATURE_CORRESPONDENCE_H_

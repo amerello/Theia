@@ -32,25 +32,28 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <cmath>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <Eigen/SVD>
 #include <glog/logging.h>
+#include <algorithm>
+#include <vector>
 #include "gtest/gtest.h"
 
 #include "theia/math/util.h"
-#include "theia/test/benchmark.h"
+#include "theia/test/test_utils.h"
 #include "theia/util/random.h"
+#include "theia/vision/sfm/estimators/fundamental_matrix_estimator.h"
 #include "theia/vision/sfm/pose/eight_point_fundamental_matrix.h"
 #include "theia/vision/sfm/pose/fundamental_matrix_util.h"
 #include "theia/vision/sfm/pose/test_util.h"
+#include "theia/vision/sfm/pose/util.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
 #include "theia/vision/sfm/types.h"
 
 namespace theia {
 namespace {
 using Eigen::AngleAxisd;
+using Eigen::Map;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector2d;
@@ -61,7 +64,6 @@ using Eigen::Vector3d;
 // noise). The fundamental matrix is computed to ensure that the reprojection
 // errors are sufficiently small.
 void GenerateImagePoints(const std::vector<Vector3d>& points_3d,
-                         const double projection_noise_std_dev,
                          const Quaterniond& expected_rotation,
                          const Vector3d& expected_translation,
                          std::vector<Vector2d>* image_1_points,
@@ -72,13 +74,6 @@ void GenerateImagePoints(const std::vector<Vector3d>& points_3d,
     image_1_points->push_back(points_3d[i].hnormalized());
     image_2_points->push_back((expected_rotation * points_3d[i] +
                                expected_translation).hnormalized());
-  }
-
-  if (projection_noise_std_dev) {
-    for (int i = 0; i < points_3d.size(); i++) {
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_1_points)[i]));
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_2_points)[i]));
-    }
   }
 }
 
@@ -115,27 +110,32 @@ void CheckReprojectionError(const std::vector<Vector2d>& image_1_points,
   }
 }
 
-void EightPointNormalizedWithNoiseTest(const std::vector<Vector3d>& points_3d,
-                                       const double projection_noise_std_dev,
-                                       const Quaterniond& expected_rotation,
-                                       const Vector3d& expected_translation,
-                                       const double kMaxReprojectionError) {
+void FundamentalMatrixEstimatorTest(const std::vector<Vector3d>& points_3d,
+                                    const Quaterniond& expected_rotation,
+                                    const Vector3d& expected_translation,
+                                    const double kMaxReprojectionError) {
   InitRandomGenerator();
   std::vector<Vector2d> image_1_points;
   std::vector<Vector2d> image_2_points;
-  GenerateImagePoints(points_3d, projection_noise_std_dev, expected_rotation,
-                      expected_translation, &image_1_points, &image_2_points);
-  // Compute fundamental matrix.
-  Matrix3d fundamental_matrix;
-  EXPECT_TRUE(NormalizedEightPointFundamentalMatrix(image_1_points,
-                                                    image_2_points,
-                                                    &fundamental_matrix));
+  GenerateImagePoints(points_3d, expected_rotation, expected_translation,
+                      &image_1_points, &image_2_points);
 
-  CheckReprojectionError(image_1_points, image_2_points, fundamental_matrix,
+  std::vector<FeatureCorrespondence> features(8);
+  for (int i = 0; i < 8; i++) {
+    features[i].feature1 = image_1_points[i];
+    features[i].feature2 = image_2_points[i];
+  }
+
+  // Compute fundamental matrix.
+  FundamentalMatrixEstimator fmatrix_estimator;
+  std::vector<Matrix3d> fundamental_matrix;
+  EXPECT_TRUE(fmatrix_estimator.EstimateModel(features, &fundamental_matrix));
+
+  CheckReprojectionError(image_1_points, image_2_points, fundamental_matrix[0],
                          kMaxReprojectionError);
 }
 
-void BasicNormalizedTest() {
+TEST(FundamentalMatrixEstimatorTest, FullTest) {
   const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
                                             Vector3d(1.0, -1.0, 2.0),
                                             Vector3d(-1.0, 1.0, 2.0),
@@ -149,65 +149,10 @@ void BasicNormalizedTest() {
   const Quaterniond soln_rotation(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
   const Vector3d soln_translation(1.0, 0.5, 1.5);
-  const double kNoise = 0.0 / 512.0;
   const double kMaxReprojectionError = 1e-12;
 
-  EightPointNormalizedWithNoiseTest(
-      points_3d, kNoise, soln_rotation, soln_translation,
-      kMaxReprojectionError);
-}
-
-TEST(NormalizedEightPoint, BasicTest) {
-  BasicNormalizedTest();
-}
-
-BENCHMARK(NormalizedEightPoint, Benchmark, 100, 1000) {
-  BasicNormalizedTest();
-}
-
-TEST(NormalizedEightPoint, MinimalNoiseTest) {
-  const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
-                                            Vector3d(1.0, -1.0, 2.0),
-                                            Vector3d(-1.0, 1.0, 2.0),
-                                            Vector3d(2.0, 1.0, 3.0),
-                                            Vector3d(-1.0, -3.0, 2.0),
-                                            Vector3d(1.0, -2.0, 1.0),
-                                            Vector3d(-1.0, 4.0, 2.0),
-                                            Vector3d(-2.0, 2.0, 3.0)
-  };
-
-  const Quaterniond soln_rotation(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
-  const Vector3d soln_translation(1.0, 0.5, 0.0);
-  const double kNoise = 1.0 / 512.0;
-  const double kMaxReprojectionError = 1e-4;
-
-  EightPointNormalizedWithNoiseTest(points_3d, kNoise, soln_rotation,
-                                    soln_translation, kMaxReprojectionError);
-}
-
-TEST(NormalizedEightPoint, OverconstrainedNoiseTest) {
-  const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
-                                            Vector3d(1.0, -1.0, 2.0),
-                                            Vector3d(-1.0, 1.0, 2.0),
-                                            Vector3d(2.0, 1.0, 3.0),
-                                            Vector3d(-1.0, -3.0, 2.0),
-                                            Vector3d(1.0, -2.0, 1.0),
-                                            Vector3d(-1.0, 4.0, 2.0),
-                                            Vector3d(-2.0, 2.0, 3.0),
-                                            Vector3d(-2.0, 4.0, 1.0),
-                                            Vector3d(-2.0, 2.0, 2.0),
-                                            Vector3d(-4.0, 3.0, 3.0),
-  };
-
-  const Quaterniond soln_rotation(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
-  const Vector3d soln_translation(1.0, 0.5, 0.0);
-  const double kNoise = 1.0 / 512.0;
-  const double kMaxReprojectionError = 1e-4;
-
-  EightPointNormalizedWithNoiseTest(points_3d, kNoise, soln_rotation,
-                                    soln_translation, kMaxReprojectionError);
+  FundamentalMatrixEstimatorTest(points_3d, soln_rotation, soln_translation,
+                                 kMaxReprojectionError);
 }
 
 }  // namespace

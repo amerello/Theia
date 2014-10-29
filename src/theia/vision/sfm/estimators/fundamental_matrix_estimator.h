@@ -32,38 +32,41 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
+#ifndef THEIA_VISION_SFM_ESTIMATORS_FUNDAMENTAL_MATRIX_ESTIMATOR_H_
+#define THEIA_VISION_SFM_ESTIMATORS_FUNDAMENTAL_MATRIX_ESTIMATOR_H_
 
 #include <Eigen/Core>
 #include <vector>
 
 #include "theia/solvers/estimator.h"
+#include "theia/util/util.h"
 #include "theia/vision/sfm/feature_correspondence.h"
-#include "theia/vision/sfm/pose/five_point_relative_pose.h"
-#include "theia/vision/sfm/pose/util.h"
 
 namespace theia {
 
-bool EssentialMatrixEstimator::EstimateModel(
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<Eigen::Matrix3d>* essential_matrices) const {
-  Eigen::Vector2d image1_points[5], image2_points[5];
-  for (int i = 0; i < 5; i++) {
-    image1_points[i] = correspondences[i].feature1;
-    image2_points[i] = correspondences[i].feature2;
-  }
+// An estimator for computing the fundamental matrix from 6 feature
+// correspondences. The feature correspondences should be in pixel coordinates.
+class FundamentalMatrixEstimator
+    : public Estimator<FeatureCorrespondence, Eigen::Matrix3d> {
+ public:
+  FundamentalMatrixEstimator() {}
 
-  return FivePointRelativePose(image1_points,
-                               image2_points,
-                               essential_matrices);
-}
+  // 5 correspondences are needed to determine an fundamental matrix.
+  double SampleSize() const { return 8; }
 
-double EssentialMatrixEstimator::Error(
-    const FeatureCorrespondence& correspondence,
-    const Eigen::Matrix3d& essential_matrix) const {
-  return SquaredSampsonDistance(essential_matrix,
-                                correspondence.feature1,
-                                correspondence.feature2);
-}
+  // Estimates candidate fundamental matrices from correspondences.
+  bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
+                     std::vector<Eigen::Matrix3d>* fundamental_matrices) const;
+
+  // The error for a correspondences given a model. This is the squared sampson
+  // error.
+  double Error(const FeatureCorrespondence& correspondence,
+               const Eigen::Matrix3d& fundamental_matrix) const;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(FundamentalMatrixEstimator);
+};
 
 }  // namespace theia
+
+#endif  // THEIA_VISION_SFM_ESTIMATORS_FUNDAMENTAL_MATRIX_ESTIMATOR_H_

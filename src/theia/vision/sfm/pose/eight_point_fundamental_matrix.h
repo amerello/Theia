@@ -55,9 +55,10 @@ namespace theia {
 //   fundamental_matrix: the estimated fundamental matrix such that
 //     x2^t * F * x1 = 0 for points x1 in image_1_points and x2 in
 //     image_2_points.
-bool NormalizedEightPoint(const std::vector<Eigen::Vector2d>& image_1_points,
-                          const std::vector<Eigen::Vector2d>& image_2_points,
-                          Eigen::Matrix3d* fundamental_matrix);
+bool NormalizedEightPointFundamentalMatrix(
+    const std::vector<Eigen::Vector2d>& image_1_points,
+    const std::vector<Eigen::Vector2d>& image_2_points,
+    Eigen::Matrix3d* fundamental_matrix);
 
 }  // namespace theia
 

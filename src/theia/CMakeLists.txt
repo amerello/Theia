@@ -63,6 +63,7 @@ SET(THEIA_SRC
   vision/sfm/camera/projection_matrix_utils.cc
   vision/sfm/camera/radial_distortion.cc
   vision/sfm/estimators/essential_matrix_estimator.cc
+  vision/sfm/estimators/fundamental_matrix_estimator.cc
   vision/sfm/model.cc
   vision/sfm/pose/dls_impl.cc
   vision/sfm/pose/dls_pnp.cc
@@ -166,6 +167,7 @@ IF (BUILD_TESTING)
   GTEST(vision/sfm/camera/projection_matrix_utils)
   GTEST(vision/sfm/camera/radial_distortion)
   GTEST(vision/sfm/estimators/essential_matrix_estimator)
+  GTEST(vision/sfm/estimators/fundamental_matrix_estimator)
   GTEST(vision/sfm/model)
   GTEST(vision/sfm/pose/dls_pnp)
   GTEST(vision/sfm/pose/eight_point_fundamental_matrix)
