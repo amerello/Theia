@@ -32,42 +32,32 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_VISION_SFM_POSE_UTIL_H_
-#define THEIA_VISION_SFM_POSE_UTIL_H_
+#ifndef THEIA_VISION_SFM_POSE_TEST_UTIL_H_
+#define THEIA_VISION_SFM_POSE_TEST_UTIL_H_
 
 #include <Eigen/Core>
 #include <vector>
 
 namespace theia {
 
-// Calculates Sampson distance for two correspondances and an essential or
-// fundamental matrix by eq. 11.9 in Hartley and Zisserman. // For an E or F
-// that is defined such that y^t * E * x = 0
-double SquaredSampsonDistance(const Eigen::Matrix3d& F,
-                              const Eigen::Vector2d& x,
-                              const Eigen::Vector2d& y);
+// Adds noise to the 3D point passed in.
+void AddNoiseToPoint(const double noise_factor, Eigen::Vector3d* point);
 
-// Returns the cross product matrix of a vector: if cross_vec = [x y z] then
-//                        [ 0  -z   y]
-// cross product matrix = [ z   0  -y]
-//                        [-y   x   0]
-Eigen::Matrix3d CrossProductMatrix(const Eigen::Vector3d& cross_vec);
+// Adds noise to the ray i.e. the projection of the point.
+void AddNoiseToProjection(const double noise_factor, Eigen::Vector2d* point);
 
-// Given a 2xN matrix of image points (of the form [x, y]), this method
-// calculates the matrix that will shift the points so that the centroid is at
-// the origin and the average distance from the centroid is sqrt(2). Returns the
-// transformation matrix and the transformed points.
-bool NormalizeImagePoints(
-    const std::vector<Eigen::Vector2d>& image_points,
-    std::vector<Eigen::Vector2d>* normalized_image_points,
-    Eigen::Matrix3d* normalization_matrix);
+// Adds noise to the image ray.
+void AddNoiseToRay(const double std_dev, Eigen::Vector3d* proj);
 
+void AddGaussianNoise(const double noise_factor, Eigen::Vector3d* ray);
 
-// Projects a 3x3 matrix to the rotation matrix in SO3 space with the closest
-// Frobenius norm. For a matrix with an SVD decomposition M = USV, the nearest
-// rotation matrix is R = UV'.
-Eigen::Matrix3d ProjectToRotationMatrix(const Eigen::Matrix3d& matrix);
-
+// Creates points that are randomly distributed within a viewing frustum.
+void CreateRandomPointsInFrustum(const double near_plane_width,
+                                 const double near_plane_height,
+                                 const double near_plane_depth,
+                                 const double far_plane_depth,
+                                 const int num_points,
+                                 std::vector<Eigen::Vector3d>* random_points);
 }  // namespace theia
 
-#endif  // THEIA_VISION_SFM_POSE_UTIL_H_
+#endif  // THEIA_VISION_SFM_POSE_TEST_UTIL_H_

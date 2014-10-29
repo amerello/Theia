@@ -1,5 +1,5 @@
-// Copyright (C) 2013 The Regents of the University of California (Regents)
-// and Google, Inc. All rights reserved.
+// Copyright (C) 2013 The Regents of the University of California (Regents).
+// All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -13,10 +13,9 @@
 //       disclaimer in the documentation and/or other materials provided
 //       with the distribution.
 //
-//     * Neither the name of The Regents or University of California, Google,
-//       nor the names of its contributors may be used to endorse or promote
-//       products derived from this software without specific prior written
-//       permission.
+//     * Neither the name of The Regents or University of California nor the
+//       names of its contributors may be used to endorse or promote products
+//       derived from this software without specific prior written permission.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,7 +30,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu), John Flynn (jflynn@google.com)
+// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -45,7 +44,7 @@
 #include "theia/util/random.h"
 #include "theia/util/util.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 
 namespace theia {
 using Eigen::MatrixXd;

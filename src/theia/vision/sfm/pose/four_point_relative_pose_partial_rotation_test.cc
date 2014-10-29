@@ -48,7 +48,7 @@
 #include "theia/util/util.h"
 #include "theia/util/random.h"
 #include "theia/vision/sfm/pose/four_point_relative_pose_partial_rotation.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 
 namespace theia {
 namespace {

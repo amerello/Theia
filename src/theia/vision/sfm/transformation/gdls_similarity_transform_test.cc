@@ -1,4 +1,4 @@
-// Copyright (C) 2013 The Regents of the University of California (Regents).
+// Copyright (C) 2014 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@
 #include "theia/test/benchmark.h"
 #include "theia/util/random.h"
 #include "theia/util/util.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/transformation/gdls_similarity_transform.h"
 
 namespace theia {

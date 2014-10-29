@@ -46,7 +46,7 @@
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
 #include "theia/util/random.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/types.h"
 
 namespace theia {

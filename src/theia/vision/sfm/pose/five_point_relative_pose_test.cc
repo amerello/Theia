@@ -42,6 +42,7 @@
 #include "theia/math/util.h"
 #include "theia/util/random.h"
 #include "theia/vision/sfm/pose/five_point_relative_pose.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/pose/util.h"
 #include "theia/test/benchmark.h"
 #include "theia/test/test_utils.h"

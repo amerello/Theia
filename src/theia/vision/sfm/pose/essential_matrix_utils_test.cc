@@ -39,6 +39,7 @@
 
 #include "gtest/gtest.h"
 #include "theia/vision/sfm/pose/essential_matrix_utils.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/pose/util.h"
 
 namespace theia {

@@ -41,7 +41,7 @@
 #include "theia/test/benchmark.h"
 #include "theia/util/random.h"
 #include "theia/vision/sfm/pose/four_point_homography.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 
 namespace theia {
 namespace {

@@ -44,7 +44,7 @@
 #include "theia/util/random.h"
 #include "theia/vision/sfm/pose/eight_point_fundamental_matrix.h"
 #include "theia/vision/sfm/pose/fundamental_matrix_util.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
 #include "theia/vision/sfm/types.h"
 

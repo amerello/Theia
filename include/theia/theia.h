@@ -109,6 +109,7 @@
 #include "theia/vision/sfm/pose/fundamental_matrix_util.h"
 #include "theia/vision/sfm/pose/perspective_three_point.h"
 #include "theia/vision/sfm/pose/three_point_relative_pose_partial_rotation.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/pose/util.h"
 #include "theia/vision/sfm/track.h"
 #include "theia/vision/sfm/track_builder.h"

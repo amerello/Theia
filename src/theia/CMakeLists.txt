@@ -76,6 +76,7 @@ SET(THEIA_SRC
   vision/sfm/pose/four_point_relative_pose_partial_rotation.cc
   vision/sfm/pose/fundamental_matrix_util.cc
   vision/sfm/pose/perspective_three_point.cc
+  vision/sfm/pose/test_util.cc
   vision/sfm/pose/three_point_relative_pose_partial_rotation.cc
   vision/sfm/pose/util.cc
   vision/sfm/track.cc

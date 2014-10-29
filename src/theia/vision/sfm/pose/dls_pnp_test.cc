@@ -45,7 +45,7 @@
 #include "theia/util/random.h"
 #include "theia/util/util.h"
 #include "theia/vision/sfm/pose/dls_pnp.h"
-#include "theia/vision/sfm/pose/util.h"
+#include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/types.h"
 
 namespace theia {

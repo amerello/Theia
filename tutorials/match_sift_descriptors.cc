@@ -73,7 +73,8 @@ int main(int argc, char *argv[]) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now() - start);
     time_to_read_images += duration.count();
-    LOG(INFO) << "Extracted features for image: " << img_filepaths[i];
+    LOG(INFO) << "Extracted " << descriptors[i].size()
+              << " features for image: " << img_filepaths[i];
   }
 
   // Match all image pairs.
