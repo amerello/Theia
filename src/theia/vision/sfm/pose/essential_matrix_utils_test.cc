@@ -38,6 +38,7 @@
 #include <algorithm>
 
 #include "gtest/gtest.h"
+#include "theia/vision/sfm/feature_correspondence.h"
 #include "theia/vision/sfm/pose/essential_matrix_utils.h"
 #include "theia/vision/sfm/pose/test_util.h"
 #include "theia/vision/sfm/pose/util.h"
@@ -77,6 +78,76 @@ TEST(DecomposeEssentialMatrix, BasicTest) {
                 (rotation1_dist < kRotationTolerance ||
                  rotation2_dist < kRotationTolerance));
   }
+}
+
+void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
+                                        const int num_outliers) {
+  static const double kTolerance = 1e-12;
+
+  for (int i = 0; i < 100; i++) {
+    const Matrix3d gt_rotation_matrix = ProjectToRotationMatrix(
+        Matrix3d::Identity() + 0.3 * Matrix3d::Random());
+    const Eigen::AngleAxisd gt_angle_axis(gt_rotation_matrix);
+    const Vector3d gt_rotation = gt_angle_axis.angle() * gt_angle_axis.axis();
+
+    const Vector3d gt_translation = Vector3d::Random().normalized();
+    const Vector3d gt_position =
+        -gt_rotation_matrix.transpose() * gt_translation;
+    const Matrix3d essential_matrix =
+        CrossProductMatrix(gt_translation) * gt_rotation_matrix;
+
+    // Create Correspondences.
+    std::vector<FeatureCorrespondence> correspondences;
+    for (int j = 0; j < num_inliers; j++) {
+      // Make sure the point is in front of the camera.
+      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 100);
+      const Vector3d proj_3d =
+          gt_rotation_matrix * point_3d + gt_translation;
+
+      FeatureCorrespondence correspondence;
+      correspondence.feature1 = point_3d.hnormalized();
+      correspondence.feature2 = proj_3d.hnormalized();
+      correspondences.emplace_back(correspondence);
+    }
+
+    // Add outliers
+    for (int j = 0; j < num_outliers; j++) {
+      // Make sure the point is in front of the camera.
+      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, -100);
+      const Vector3d proj_3d =
+          gt_rotation_matrix * point_3d + gt_translation;
+
+      FeatureCorrespondence correspondence;
+      correspondence.feature1 = point_3d.hnormalized();
+      correspondence.feature2 = proj_3d.hnormalized();
+      correspondences.emplace_back(correspondence);
+    }
+
+    Vector3d estimated_rotation, estimated_position;
+    const int num_points_in_front = GetBestPoseFromEssentialMatrix(
+        essential_matrix,
+        correspondences,
+        &estimated_rotation,
+        &estimated_position);
+
+    // Ensure that the results are correct. Sincer there is no noise we can
+    // expect te number of point in front to be exact.
+    EXPECT_EQ(num_points_in_front, num_inliers);
+    EXPECT_LT((gt_rotation - estimated_rotation).norm(), kTolerance);
+    EXPECT_LT((gt_position - estimated_position).norm(), kTolerance);
+  }
+}
+
+TEST(GetBestPoseFromEssentialMatrix, AllInliers) {
+  static const int kNumInliers = 100;
+  static const int kNumOutliers = 0;
+  TestGetBestPoseFromEssentialMatrix(kNumInliers, kNumOutliers);
+}
+
+TEST(GetBestPoseFromEssentialMatrix, MostlyInliers) {
+  static const int kNumInliers = 100;
+  static const int kNumOutliers = 50;
+  TestGetBestPoseFromEssentialMatrix(kNumInliers, kNumOutliers);
 }
 
 }  // namespace theia

@@ -43,6 +43,7 @@
 #include "theia/test/benchmark.h"
 #include "theia/util/random.h"
 #include "theia/util/util.h"
+#include "theia/vision/sfm/feature_correspondence.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
 #include "theia/vision/sfm/pose/test_util.h"
 
@@ -307,6 +308,44 @@ BENCHMARK(TriangulationNView, Benchmark, 100, 1000) {
 
   // Run the test.
   TestTriangulationManyPoints(kProjectionNoise, kReprojectionTolerance);
+}
+
+void TestIsTriangulatedPointInFrontOfCameras(
+    const Eigen::Vector3d& point3d,
+    const Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& translation,
+    const bool expected_outcome) {
+  FeatureCorrespondence correspondence;
+  correspondence.feature1 = point3d.hnormalized();
+  correspondence.feature2 =
+      (rotation * point3d + translation).hnormalized();
+  const Vector3d position = -rotation.transpose() * translation;
+  EXPECT_EQ(IsTriangulatedPointInFrontOfCameras(
+      correspondence,
+      rotation,
+      position),
+            expected_outcome);
+}
+
+TEST(IsTriangulatedPointInFrontOfCameras, InFront) {
+  const Matrix3d rotation = Matrix3d::Identity();
+  const Vector3d position(-1, 0, 0);
+  const Vector3d point(0, 0, 5);
+  TestIsTriangulatedPointInFrontOfCameras(point, rotation, position, true);
+}
+
+TEST(IsTriangulatedPointInFrontOfCameras, Behind) {
+  const Matrix3d rotation = Matrix3d::Identity();
+  const Vector3d position(-1, 0, 0);
+  const Vector3d point(0, 0, -5);
+  TestIsTriangulatedPointInFrontOfCameras(point, rotation, position, false);
+}
+
+TEST(IsTriangulatedPointInFrontOfCameras, OneInFrontOneBehind) {
+  const Matrix3d rotation = Matrix3d::Identity();
+  const Vector3d position(0, 0, -2);
+  const Vector3d point(0, 0, 1);
+  TestIsTriangulatedPointInFrontOfCameras(point, rotation, position, false);
 }
 
 }  // namespace theia

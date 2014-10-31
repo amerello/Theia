@@ -41,6 +41,7 @@
 #include <glog/logging.h>
 #include <vector>
 
+#include "theia/vision/sfm/feature_correspondence.h"
 #include "theia/vision/sfm/pose/fundamental_matrix_util.h"
 #include "theia/vision/sfm/pose/util.h"
 
@@ -194,6 +195,25 @@ bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
 
   *triangulated_point = homog_triangulated_point.hnormalized();
   return true;
+}
+
+bool IsTriangulatedPointInFrontOfCameras(
+    const FeatureCorrespondence& correspondence,
+    const Matrix3d& rotation,
+    const Vector3d& position) {
+
+  const Vector3d dir1 = correspondence.feature1.homogeneous();
+  const Vector3d dir2 =
+      rotation.transpose() * correspondence.feature2.homogeneous();
+
+  const double dir1_sq = dir1.squaredNorm();
+  const double dir2_sq = dir2.squaredNorm();
+  const double dir1_dir2 = dir1.dot(dir2);
+  const double dir1_pos = dir1.dot(position);
+  const double dir2_pos = dir2.dot(position);
+
+  return (dir2_sq * dir1_pos - dir1_dir2 * dir2_pos > 0 &&
+          dir1_dir2 * dir1_pos - dir1_sq * dir2_pos > 0);
 }
 
 }  // namespace theia

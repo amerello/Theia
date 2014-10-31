@@ -36,8 +36,11 @@
 #define THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
 
 #include <Eigen/Core>
+#include <vector>
 
 namespace theia {
+
+struct FeatureCorrespondence;
 
 // Decomposes the essential matrix into the rotation R and translation t such
 // that E can be any of the four candidate solutions: [rotation1 | translation],
@@ -48,6 +51,15 @@ void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
                               Eigen::Matrix3d* rotation1,
                               Eigen::Matrix3d* rotation2,
                               Eigen::Vector3d* translation);
+
+// Chooses the best pose of the 4 possible poses that can be computed from the
+// essential matrix. The best pose is chosen as the pose that triangulates the
+// most points in front of both cameras.
+int GetBestPoseFromEssentialMatrix(
+    const Eigen::Matrix3d& essential_matrix,
+    const std::vector<FeatureCorrespondence>& normalized_correspondences,
+    Eigen::Vector3d* rotation,
+    Eigen::Vector3d* position);
 
 }  // namespace theia
 

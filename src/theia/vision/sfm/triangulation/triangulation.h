@@ -42,6 +42,8 @@
 
 namespace theia {
 
+struct FeatureCorrespondence;
+
 // Triangulates 2 posed views using the "Triangulation Made Easy" by Lindstrom
 // (CVPR 2010)". The inputs are the projection matrices and image points. For
 // two view reconstructions where only an essential matrix or fundamental matrix
@@ -80,6 +82,14 @@ bool TriangulateNViewSVD(
 bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
                       const std::vector<Eigen::Vector2d>& points,
                       Eigen::Vector3d* triangulated_point);
+
+// Determines if the 3D point is in front of the camera or not. We can simply
+// compute the homogeneous ray intersection (closest point to two rays) and
+// determine if the depth of the point is positive for both camera.
+bool IsTriangulatedPointInFrontOfCameras(
+    const FeatureCorrespondence& correspondence,
+    const Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& position);
 
 }  // namespace theia
 

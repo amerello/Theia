@@ -36,6 +36,12 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <glog/logging.h>
+
+#include <algorithm>
+
+#include "theia/vision/sfm/feature_correspondence.h"
+#include "theia/vision/sfm/triangulation/triangulation.h"
 
 namespace theia {
 
@@ -89,6 +95,52 @@ void DecomposeEssentialMatrix(const Matrix3d& essential_matrix,
   *rotation1 = u * d * v.transpose();
   *rotation2 = u * d.transpose() * v.transpose();
   *translation = u.col(2).normalized();
+}
+
+int GetBestPoseFromEssentialMatrix(
+    const Matrix3d& essential_matrix,
+    const std::vector<FeatureCorrespondence>& normalized_correspondences,
+    Vector3d* rotation,
+    Vector3d* position) {
+  // Decompose ematrix.
+  Matrix3d rotation1, rotation2;
+  Vector3d translation;
+  DecomposeEssentialMatrix(essential_matrix,
+                           &rotation1,
+                           &rotation2,
+                           &translation);
+  const std::vector<Matrix3d> rotations = { rotation1, rotation1,
+                                            rotation2, rotation2 };
+  const std::vector<Vector3d> positions = {
+    -rotations[0].transpose() * translation,
+    -rotations[1].transpose() * -translation,
+    -rotations[2].transpose() * translation,
+    -rotations[3].transpose() * -translation };
+
+  // From the 4 candidate poses, find the one with the most triangulated points
+  // in front of the camera.
+  std::vector<int> points_in_front_of_cameras(4, 0);
+  for (int i = 0; i < 4; i++) {
+    for (const auto& correspondence : normalized_correspondences) {
+      if (IsTriangulatedPointInFrontOfCameras(correspondence,
+                                              rotations[i],
+                                              positions[i])) {
+        ++points_in_front_of_cameras[i];
+      }
+    }
+  }
+
+  // Find the pose with the most points in front of the camera.
+  const auto& max_element = std::max_element(points_in_front_of_cameras.begin(),
+                                             points_in_front_of_cameras.end());
+  const int max_index =  std::distance(points_in_front_of_cameras.begin(),
+                                       max_element);
+
+  // Set the pose.
+  const Eigen::AngleAxisd rotation_angle_axis(rotations[max_index]);
+  *rotation = rotation_angle_axis.angle() * rotation_angle_axis.axis();
+  *position = positions[max_index];
+  return *max_element;
 }
 
 }  // namespace theia

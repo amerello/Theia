@@ -62,6 +62,9 @@ SET(THEIA_SRC
   vision/sfm/camera/camera.cc
   vision/sfm/camera/projection_matrix_utils.cc
   vision/sfm/camera/radial_distortion.cc
+  vision/sfm/estimate_twoview_info.cc
+  vision/sfm/estimate_twoview_info_calibrated.cc
+  vision/sfm/estimate_twoview_info_uncalibrated.cc
   vision/sfm/estimators/essential_matrix_estimator.cc
   vision/sfm/estimators/fundamental_matrix_estimator.cc
   vision/sfm/model.cc
