@@ -96,6 +96,7 @@
 #include "theia/vision/sfm/estimate_twoview_info.h"
 #include "theia/vision/sfm/estimators/essential_matrix_estimator.h"
 #include "theia/vision/sfm/estimators/estimate_relative_pose.h"
+#include "theia/vision/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/vision/sfm/estimators/fundamental_matrix_estimator.h"
 #include "theia/vision/sfm/estimators/relative_pose_estimator.h"
 #include "theia/vision/sfm/estimators/uncalibrated_relative_pose_estimator.h"
