@@ -199,7 +199,7 @@ TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
 
 TEST(EstimateUncalibratedRelativePose, OutliersWithNoise) {
   RansacParameters options;
-  options.error_thresh = 2;
+  options.error_thresh = 1;
   options.failure_probability = 0.0001;
   const double kInlierRatio = 0.5;
   const double kNoise = 1.0;

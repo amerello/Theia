@@ -42,7 +42,9 @@
 
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/vision/sfm/estimators/estimate_relative_pose.h"
+#include "theia/vision/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/vision/sfm/estimators/relative_pose_estimator.h"
+#include "theia/vision/sfm/estimators/uncalibrated_relative_pose_estimator.h"
 #include "theia/vision/sfm/feature_correspondence.h"
 #include "theia/vision/sfm/pose/util.h"
 #include "theia/vision/sfm/triangulation/triangulation.h"
@@ -54,6 +56,7 @@ namespace theia {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 namespace {
@@ -134,9 +137,64 @@ bool EstimateTwoViewInfoUncalibrated(
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
-  LOG(ERROR) << "Estimating two view infos from uncalibrated image pairs is "
-                "not currently implemented!";
-  return false;
+  // Normalize features w.r.t principal point.
+  std::vector<FeatureCorrespondence> centered_correspondences(
+      correspondences.size());
+  const Vector2d principal_point1(view1.Camera().PrincipalPointX(),
+                                  view1.Camera().PrincipalPointY());
+  const Vector2d principal_point2(view1.Camera().PrincipalPointX(),
+                                  view1.Camera().PrincipalPointY());
+  for (int i = 0; i < correspondences.size(); i++) {
+    centered_correspondences[i].feature1 =
+        correspondences[i].feature1 - principal_point1;
+    centered_correspondences[i].feature2 =
+        correspondences[i].feature2 - principal_point2;
+  }
+
+  // Set the ransac parameters.
+  RansacParameters ransac_options;
+  ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
+  ransac_options.min_iterations = options.min_ransac_iterations;
+  ransac_options.max_iterations = options.max_ransac_iterations;
+  ransac_options.error_thresh =
+      options.max_sampson_error_pixels * options.max_sampson_error_pixels;
+
+  UncalibratedRelativePose relative_pose;
+  RansacSummary summary;
+  if (!EstimateUncalibratedRelativePose(ransac_options,
+                                        options.ransac_type,
+                                        centered_correspondences,
+                                        &relative_pose,
+                                        &summary)) {
+    VLOG(2) << "Could not estimate a relative pose for " << view1.Name()
+            << " and " << view2.Name();
+    return false;
+  }
+
+  AngleAxisd rotation(relative_pose.rotation);
+
+  // Set the twoview info.
+  twoview_info->rotation_2 = rotation.angle() * rotation.axis();
+  twoview_info->position_2 = relative_pose.position;
+  twoview_info->focal_length_1 = relative_pose.focal_length1;
+  twoview_info->focal_length_2 = relative_pose.focal_length2;
+
+  // Normalize the correspondences by focal length.
+  for (int i = 0; i < centered_correspondences.size(); i++) {
+    centered_correspondences[i].feature1 /= relative_pose.focal_length1;
+    centered_correspondences[i].feature2 /= relative_pose.focal_length2;
+  }
+
+  // Get the number of 3d points.
+  twoview_info->num_3d_points =
+      NumTriangulatedFeatures(centered_correspondences,
+                              relative_pose.rotation,
+                              relative_pose.position);
+  twoview_info->num_matched_features = summary.inliers.size();
+
+  *inlier_indices = summary.inliers;
+
+  return true;
 }
 
 }  // namespace
