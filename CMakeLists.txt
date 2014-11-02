@@ -76,7 +76,7 @@ ENDIF (EXISTS ${LOCAL_GIT_DIRECTORY})
 # ==============================================================================
 # Additional cmake find modules
 # ==============================================================================
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmakeFindModules")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmakeFindModules")
 
 OPTION(BUILD_TESTING "Enable testing" ON)
 OPTION(OPENMP "Enable thread solving (requires OpenMP)" ON)
@@ -89,6 +89,9 @@ SET(GTEST_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libraries/gtest")
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+SET(CMAKE_RELEASE_POSTFIX "")
+SET(CMAKE_DEBUG_POSTFIX "-debug")
 
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -133,39 +136,23 @@ IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   ENDIF(HAVE_RETURN_TYPE_C_LINKAGE)
 ENDIF ()
 
-# Google Flags
-MESSAGE("-- Check for Google Flags")
-FIND_LIBRARY(GFLAGS_LIB NAMES gflags PATHS ${SEARCH_LIBS})
-IF (NOT EXISTS ${GFLAGS_LIB})
-  MESSAGE(FATAL_ERROR
-    "Can't find Google Flags. Please specify: "
-    "-DGFLAGS_LIB=...")
-ENDIF (NOT EXISTS ${GFLAGS_LIB})
-MESSAGE("-- Found Google Flags library: ${GFLAGS_LIB}")
-FIND_PATH(GFLAGS_INCLUDE NAMES gflags/gflags.h PATHS ${SEARCH_HEADERS})
-IF (NOT EXISTS ${GFLAGS_INCLUDE})
-  MESSAGE(FATAL_ERROR
-    "Can't find Google Flags. Please specify: "
-    "-DGFLAGS_INCLUDE=...")
-ENDIF (NOT EXISTS ${GFLAGS_INCLUDE})
-MESSAGE("-- Found Google Flags header in: ${GFLAGS_INCLUDE}")
-INCLUDE_DIRECTORIES(${GFLAGS_INCLUDE})
-
-# Don't search with REQUIRED as we can continue without gflags.
+# GFlags
 FIND_PACKAGE(Gflags REQUIRED)
 IF (GFLAGS_FOUND)
-  MESSAGE("-- Found Google Flags header in: ${GFLAGS_INCLUDE_DIRS}")
+  MESSAGE("-- Found Google Flags: ${GFLAGS_INCLUDE_DIRS}")
 ELSE (GLOG_FOUND)
   MESSAGE(FATAL_ERROR "Can't find Google FLAGS.")
 ENDIF (GFLAGS_FOUND)
+
+# Don't search with REQUIRED as we can continue without gflags.
 
 # Google Logging
 MESSAGE("-- Check for Google Log")
 FIND_PACKAGE(Glog REQUIRED)
 IF (GLOG_FOUND)
-  MESSAGE("-- Found Google Log header in: ${GLOG_INCLUDE_DIRS}")
+  MESSAGE("-- Found Google Logging: ${GLOG_INCLUDE_DIRS}")
 ELSE (GLOG_FOUND)
-  MESSAGE(FATAL_ERROR "Can't find Google Log. Please set GLOG_INCLUDE_DIR & "
+  MESSAGE(FATAL_ERROR "Can't find Google Logging. Please set GLOG_INCLUDE_DIR & "
     "GLOG_LIBRARY")
 ENDIF (GLOG_FOUND)
 
@@ -173,12 +160,11 @@ ENDIF (GLOG_FOUND)
 MESSAGE("-- Check for Ceres")
 FIND_PACKAGE(Ceres REQUIRED)
 IF (CERES_FOUND)
-  MESSAGE("-- Found Ceres header in: ${CERES_INCLUDE_DIRS}")
+  MESSAGE("-- Found Ceres: ${CERES_INCLUDE_DIRS}")
 ELSE (CERES_FOUND)
   MESSAGE(FATAL_ERROR "Can't find Ceres. Please set CERES_INCLUDE_DIR & "
     "CERES_LIBRARY")
 ENDIF (CERES_FOUND)
-MESSAGE("-- Found Ceres library: ${CERES_LIBRARIES}")
 
 INCLUDE_DIRECTORIES(
   include
@@ -270,13 +256,13 @@ INSTALL(DIRECTORY src/theia/ DESTINATION include/theia FILES_MATCHING PATTERN "*
 
 INSTALL(DIRECTORY libraries/ DESTINATION include/theia/libraries FILES_MATCHING PATTERN "*.h*")
 
-# # Add an uninstall target to remove all installed files.
-# CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in"
-#                "${CMAKE_BINARY_DIR}/cmake/uninstall.cmake"
-#                IMMEDIATE @ONLY)
+# Add an uninstall target to remove all installed files.
+CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/cmakeFindModules/uninstall.cmake.in"
+               "${CMAKE_BINARY_DIR}/cmakeFindModules/uninstall.cmake"
+               IMMEDIATE @ONLY)
 
-# ADD_CUSTOM_TARGET(uninstall
-#                   COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/cmake/uninstall.cmake)
+ADD_CUSTOM_TARGET(uninstall
+                  COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/cmakeFindModules/uninstall.cmake)
 
 # Set up install directories. INCLUDE_INSTALL_DIR, LIB_INSTALL_DIR and
 # CMAKECONFIG_INSTALL_DIR must not be absolute paths.

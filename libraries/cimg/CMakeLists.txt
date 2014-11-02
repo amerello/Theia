@@ -62,16 +62,42 @@ else(WITH_CIMG_DISPLAY)
   add_definitions(-Dcimg_display=0)
 endif(WITH_CIMG_DISPLAY)
 
-if(WITH_OPENMP)
-  find_package( OpenMP QUIET)
-  IF (OpenMP_FOUND)
-    add_definitions(-Dcimg_use_openmp)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  ELSE (OpenMP_FOUND)
-    MESSAGE("-- Failed to find OpenMP, disabling.")
-  ENDIF(OpenMP_FOUND)
-endif(WITH_OPENMP)
+IF (WITH_OPENMP)
+  # Clang does not (yet) support OpenMP.
+  IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Retain the help string associated with the OPENMP option
+    # when updating it to disable use of OPENMP.
+    GET_PROPERTY(HELP_STRING CACHE OPENMP PROPERTY HELPSTRING)
+    SET(OPENMP OFF CACHE BOOL "${HELP_STRING}" FORCE)
+    MESSAGE("-- Compiler is Clang, disabling OpenMP.")
+  ELSE (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Find quietly s/t as we can continue without OpenMP if it is not found.
+    FIND_PACKAGE(OpenMP QUIET)
+    IF (OPENMP_FOUND)
+      MESSAGE("-- Building with OpenMP.")
+      ADD_DEFINITIONS(-Dcimg_use_openmp)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+      IF (UNIX)
+        # At least on Linux, we need pthreads to be enabled for mutex to
+        # compile.  This may not work on Windows or Android.
+        FIND_PACKAGE(Threads REQUIRED)
+        SET(STATIC_LIBRARY_FLAGS
+          "${STATIC_LIBRARY_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
+        SET(CMAKE_SHARED_LINKER_FLAGS
+          "${CMAKE_SHARED_LINKER_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
+      ENDIF (UNIX)
+    ELSE (OPENMP_FOUND)
+      MESSAGE("-- Failed to find OpenMP, disabling.")
+      # Retain the help string associated with the OPENMP option
+      # when updating it to disable use of OPENMP.
+      GET_PROPERTY(HELP_STRING CACHE OPENMP PROPERTY HELPSTRING)
+      SET(OPENMP OFF CACHE BOOL "${HELP_STRING}" FORCE)
+    ENDIF (OPENMP_FOUND)
+  ENDIF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+ELSE (WITH_OPENMP)
+  MESSAGE("-- Building without OpenMP.")
+ENDIF (WITH_OPENMP)
 
 if(WITH_XRANDR)
   if(NOT X11_Xrandr_INCLUDE_PATH)
