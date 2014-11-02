@@ -40,8 +40,11 @@
 
 namespace theia {
 
+class Camera;
+struct FeatureCorrespondence;
+
 // Calculates Sampson distance for two correspondances and an essential or
-// fundamental matrix by eq. 11.9 in Hartley and Zisserman. // For an E or F
+// fundamental matrix by eq. 11.9 in Hartley and Zisserman. For an E or F
 // that is defined such that y^t * E * x = 0
 double SquaredSampsonDistance(const Eigen::Matrix3d& F,
                               const Eigen::Vector2d& x,
@@ -62,11 +65,18 @@ bool NormalizeImagePoints(
     std::vector<Eigen::Vector2d>* normalized_image_points,
     Eigen::Matrix3d* normalization_matrix);
 
-
 // Projects a 3x3 matrix to the rotation matrix in SO3 space with the closest
 // Frobenius norm. For a matrix with an SVD decomposition M = USV, the nearest
 // rotation matrix is R = UV'.
 Eigen::Matrix3d ProjectToRotationMatrix(const Eigen::Matrix3d& matrix);
+
+// Normalizes pixel coordinate features in correspondences with the camera
+// intrinsics.
+void NormalizeFeatures(
+    const Camera& camera1,
+    const Camera& camera2,
+    const std::vector<FeatureCorrespondence>& correspondences,
+    std::vector<FeatureCorrespondence>* normalized_correspondences);
 
 }  // namespace theia
 

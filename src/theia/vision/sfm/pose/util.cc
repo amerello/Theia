@@ -37,7 +37,12 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <glog/logging.h>
+
+#include <vector>
+
 #include "theia/util/random.h"
+#include "theia/vision/sfm/camera/camera.h"
+#include "theia/vision/sfm/feature_correspondence.h"
 
 namespace theia {
 
@@ -47,6 +52,18 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+
+namespace {
+
+void NormalizeFeature(const Camera& camera,
+                      Vector2d* feature) {
+  feature->y() = (feature->y() - camera.PrincipalPointY()) /
+                       (camera.FocalLength() * camera.AspectRatio());
+  feature->x() = (feature->x() - camera.Skew() * feature->y() -
+                  camera.PrincipalPointY()) / camera.FocalLength();
+}
+
+}  // namespace
 
 // For an E or F that is defined such that y^t * E * x = 0
 double SquaredSampsonDistance(const Matrix3d& F,
@@ -126,6 +143,19 @@ Matrix3d ProjectToRotationMatrix(const Matrix3d& matrix) {
   }
 
   return rotation_mat;
+}
+
+void NormalizeFeatures(
+    const Camera& camera1,
+    const Camera& camera2,
+    const std::vector<FeatureCorrespondence>& correspondences,
+    std::vector<FeatureCorrespondence>* normalized_correspondences) {
+  *CHECK_NOTNULL(normalized_correspondences) = correspondences;
+
+  for (int i = 0; i < correspondences.size(); i++) {
+    NormalizeFeature(camera1, &normalized_correspondences->at(i).feature1);
+    NormalizeFeature(camera2, &normalized_correspondences->at(i).feature2);
+  }
 }
 
 }  // namespace theia

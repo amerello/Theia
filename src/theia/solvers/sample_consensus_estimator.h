@@ -73,6 +73,9 @@ struct RansacParameters {
   // This is required to limit the number of RANSAC iteratios.
   double min_inlier_ratio;
 
+  // The minimum number of iterations required before exiting.
+  int min_iterations = 1;
+
   // Another way to specify the maximal number of RANSAC iterations. In effect,
   // the maximal number of iterations is set to min(max_ransac_iterations, T),
   // where T is the number of iterations corresponding to min_inlier_ratio.
@@ -83,7 +86,7 @@ struct RansacParameters {
   // to set min_inlier_ratio and leave max_ransac_iterations to its default
   // value.
   // Per default, this variable is set to std::numeric_limits<int>::max().
-  int max_iterations;
+  int max_iterations = 1;
 
   // Whether to use the T_{d,d}, with d=1, test proposed in
   // Chum, O. and Matas, J.: Randomized RANSAC and T(d,d) test, BMVC 2002.
@@ -94,7 +97,7 @@ struct RansacParameters {
   // the correct pose will pass the test. Per default, the test is disabled.
   //
   // NOTE: Not currently implemented!
-  bool use_Tdd_test;
+  bool use_Tdd_test = false;
 };
 
 // A struct to hold useful outputs of Ransac-like methods.
@@ -176,6 +179,7 @@ SampleConsensusEstimator<ModelEstimator>::SampleConsensusEstimator(
   CHECK_GT(ransac_params.min_inlier_ratio, 0.0);
   CHECK_LT(ransac_params.failure_probability, 1.0);
   CHECK_GT(ransac_params.failure_probability, 0.0);
+  CHECK_GE(ransac_params.max_iterations, ransac_params.min_iterations);
 }
 
 template <class ModelEstimator>
@@ -266,6 +270,9 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
             std::max(quality_measurement_->GetInlierRatio(),
                      ransac_params_.min_inlier_ratio),
             log_failure_prob);
+        if (max_iterations < ransac_params_.min_iterations) {
+          max_iterations = ransac_params_.min_iterations;
+        }
       }
     }
   }

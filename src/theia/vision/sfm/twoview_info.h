@@ -46,6 +46,9 @@ namespace theia {
 struct TwoViewInfo {
   TwoViewInfo() {}
 
+  double focal_length_1;
+  double focal_length_2;
+
   Eigen::Vector3d position_2;
   Eigen::Vector3d rotation_2;
 

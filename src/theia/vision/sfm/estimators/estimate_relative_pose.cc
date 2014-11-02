@@ -1,4 +1,4 @@
-// Copyright (C) 2013 The Regents of the University of California (Regents).
+// Copyright (C) 2014 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,35 +32,38 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
-#define THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
+#include "theia/vision/sfm/estimators/estimate_relative_pose.h"
 
-#include <Eigen/Core>
+#include <memory>
 #include <vector>
+
+#include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/vision/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/vision/sfm/estimators/relative_pose_estimator.h"
+#include "theia/vision/sfm/feature_correspondence.h"
 
 namespace theia {
 
-struct FeatureCorrespondence;
-
-// Decomposes the essential matrix into the rotation R and translation t such
-// that E can be any of the four candidate solutions: [rotation1 | translation],
-// [rotation1 | -translation], [rotation2 | translation], [rotation2 |
-// -translation].
-
-void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
-                              Eigen::Matrix3d* rotation1,
-                              Eigen::Matrix3d* rotation2,
-                              Eigen::Vector3d* translation);
-
-// Chooses the best pose of the 4 possible poses that can be computed from the
-// essential matrix. The best pose is chosen as the pose that triangulates the
-// most points in front of both cameras.
-int GetBestPoseFromEssentialMatrix(
-    const Eigen::Matrix3d& essential_matrix,
+bool EstimateRelativePose(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
     const std::vector<FeatureCorrespondence>& normalized_correspondences,
-    Eigen::Matrix3d* rotation,
-    Eigen::Vector3d* position);
+    RelativePose* relative_pose,
+    RansacSummary* ransac_summary) {
+  RelativePoseEstimator relative_pose_estimator;
+  std::unique_ptr<SampleConsensusEstimator<RelativePoseEstimator> > ransac =
+      CreateAndInitializeRansacVariant(ransac_type,
+                                       ransac_params,
+                                       relative_pose_estimator);
+
+  // Estimate essential matrix.
+  if (!ransac->Estimate(normalized_correspondences,
+                        relative_pose,
+                        ransac_summary)) {
+    return false;
+  }
+
+  return true;
+}
 
 }  // namespace theia
-
-#endif  // THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_

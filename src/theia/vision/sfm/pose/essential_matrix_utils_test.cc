@@ -85,24 +85,20 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
   static const double kTolerance = 1e-12;
 
   for (int i = 0; i < 100; i++) {
-    const Matrix3d gt_rotation_matrix = ProjectToRotationMatrix(
+    const Matrix3d gt_rotation = ProjectToRotationMatrix(
         Matrix3d::Identity() + 0.3 * Matrix3d::Random());
-    const Eigen::AngleAxisd gt_angle_axis(gt_rotation_matrix);
-    const Vector3d gt_rotation = gt_angle_axis.angle() * gt_angle_axis.axis();
 
     const Vector3d gt_translation = Vector3d::Random().normalized();
-    const Vector3d gt_position =
-        -gt_rotation_matrix.transpose() * gt_translation;
+    const Vector3d gt_position = -gt_rotation.transpose() * gt_translation;
     const Matrix3d essential_matrix =
-        CrossProductMatrix(gt_translation) * gt_rotation_matrix;
+        CrossProductMatrix(gt_translation) * gt_rotation;
 
     // Create Correspondences.
     std::vector<FeatureCorrespondence> correspondences;
     for (int j = 0; j < num_inliers; j++) {
       // Make sure the point is in front of the camera.
       const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 100);
-      const Vector3d proj_3d =
-          gt_rotation_matrix * point_3d + gt_translation;
+      const Vector3d proj_3d = gt_rotation * point_3d + gt_translation;
 
       FeatureCorrespondence correspondence;
       correspondence.feature1 = point_3d.hnormalized();
@@ -114,8 +110,7 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
     for (int j = 0; j < num_outliers; j++) {
       // Make sure the point is in front of the camera.
       const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, -100);
-      const Vector3d proj_3d =
-          gt_rotation_matrix * point_3d + gt_translation;
+      const Vector3d proj_3d = gt_rotation * point_3d + gt_translation;
 
       FeatureCorrespondence correspondence;
       correspondence.feature1 = point_3d.hnormalized();
@@ -123,7 +118,8 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
       correspondences.emplace_back(correspondence);
     }
 
-    Vector3d estimated_rotation, estimated_position;
+    Matrix3d estimated_rotation;
+    Vector3d estimated_position;
     const int num_points_in_front = GetBestPoseFromEssentialMatrix(
         essential_matrix,
         correspondences,

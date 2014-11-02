@@ -1,4 +1,4 @@
-// Copyright (C) 2013 The Regents of the University of California (Regents).
+// Copyright (C) 2014 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,35 +32,49 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
-#define THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
+#ifndef THEIA_VISION_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_
+#define THEIA_VISION_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_
 
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/solvers/estimator.h"
+#include "theia/util/util.h"
+#include "theia/vision/sfm/feature_correspondence.h"
+
 namespace theia {
 
-struct FeatureCorrespondence;
+struct RelativePose {
+  Eigen::Matrix3d essential_matrix;
+  Eigen::Matrix3d rotation;
+  Eigen::Vector3d position;
+};
 
-// Decomposes the essential matrix into the rotation R and translation t such
-// that E can be any of the four candidate solutions: [rotation1 | translation],
-// [rotation1 | -translation], [rotation2 | translation], [rotation2 |
-// -translation].
+// An estimator for computing the relative pose from 5 feature
+// correspondences. The feature correspondences should be normalized
+// by the focal length with the principal point at (0, 0).
+class RelativePoseEstimator
+    : public Estimator<FeatureCorrespondence, RelativePose> {
+ public:
+  RelativePoseEstimator() {}
 
-void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
-                              Eigen::Matrix3d* rotation1,
-                              Eigen::Matrix3d* rotation2,
-                              Eigen::Vector3d* translation);
+  // 5 correspondences are needed to determine an essential matrix and thus a
+  // relative pose..
+  double SampleSize() const { return 5; }
 
-// Chooses the best pose of the 4 possible poses that can be computed from the
-// essential matrix. The best pose is chosen as the pose that triangulates the
-// most points in front of both cameras.
-int GetBestPoseFromEssentialMatrix(
-    const Eigen::Matrix3d& essential_matrix,
-    const std::vector<FeatureCorrespondence>& normalized_correspondences,
-    Eigen::Matrix3d* rotation,
-    Eigen::Vector3d* position);
+  // Estimates candidate relative poses from correspondences.
+  bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
+                     std::vector<RelativePose>* essential_matrices) const;
+
+  // The error for a correspondences given a model. This is the squared sampson
+  // error.
+  double Error(const FeatureCorrespondence& correspondence,
+               const RelativePose& essential_matrix) const;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(RelativePoseEstimator);
+};
 
 }  // namespace theia
 
-#endif  // THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
+#endif  // THEIA_VISION_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_

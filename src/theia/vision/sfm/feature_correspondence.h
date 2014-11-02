@@ -36,16 +36,18 @@
 #define THEIA_VISION_SFM_FEATURE_CORRESPONDENCE_H_
 
 #include <Eigen/Core>
+#include "theia/alignment/alignment.h"
 
 namespace theia {
 
 // The feature location of two correspondences. These can be pixel coordinates
 // or normalized coordinates.
 struct FeatureCorrespondence {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Eigen::Vector2d feature1;
   Eigen::Vector2d feature2;
 };
 
-}  // namespace std
+}  // namespace theia
 
 #endif  // THEIA_VISION_SFM_FEATURE_CORRESPONDENCE_H_

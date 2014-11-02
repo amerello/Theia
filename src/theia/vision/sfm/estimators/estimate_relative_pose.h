@@ -1,4 +1,4 @@
-// Copyright (C) 2013 The Regents of the University of California (Regents).
+// Copyright (C) 2014 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,35 +32,32 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
-#define THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
+#ifndef THEIA_VISION_SFM_ESTIMATORS_ESTIMATE_RELATIVE_POSE_H_
+#define THEIA_VISION_SFM_ESTIMATORS_ESTIMATE_RELATIVE_POSE_H_
 
-#include <Eigen/Core>
 #include <vector>
+
+#include "theia/vision/sfm/create_and_initialize_ransac_variant.h"
 
 namespace theia {
 
 struct FeatureCorrespondence;
+struct RansacParameters;
+struct RansacSummary;
+struct RelativePose;
 
-// Decomposes the essential matrix into the rotation R and translation t such
-// that E can be any of the four candidate solutions: [rotation1 | translation],
-// [rotation1 | -translation], [rotation2 | translation], [rotation2 |
-// -translation].
-
-void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
-                              Eigen::Matrix3d* rotation1,
-                              Eigen::Matrix3d* rotation2,
-                              Eigen::Vector3d* translation);
-
-// Chooses the best pose of the 4 possible poses that can be computed from the
-// essential matrix. The best pose is chosen as the pose that triangulates the
-// most points in front of both cameras.
-int GetBestPoseFromEssentialMatrix(
-    const Eigen::Matrix3d& essential_matrix,
+// Estimates the relative pose using the ransac variant of choice (e.g. Ransac,
+// Prosac, etc.). Correspondences must be normalized by the camera
+// intrinsics. Returns true if a pose could be succesfully estimated, and false
+// otherwise. The quality of the result depends on the quality of the input
+// data.
+bool EstimateRelativePose(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
     const std::vector<FeatureCorrespondence>& normalized_correspondences,
-    Eigen::Matrix3d* rotation,
-    Eigen::Vector3d* position);
+    RelativePose* relative_pose,
+    RansacSummary* ransac_summary);
 
 }  // namespace theia
 
-#endif  // THEIA_VISION_SFM_POSE_ESSENTIAL_MATRIX_UTILS_H_
+#endif  // THEIA_VISION_SFM_ESTIMATORS_ESTIMATE_RELATIVE_POSE_H_

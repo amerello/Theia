@@ -100,7 +100,7 @@ void DecomposeEssentialMatrix(const Matrix3d& essential_matrix,
 int GetBestPoseFromEssentialMatrix(
     const Matrix3d& essential_matrix,
     const std::vector<FeatureCorrespondence>& normalized_correspondences,
-    Vector3d* rotation,
+    Matrix3d* rotation,
     Vector3d* position) {
   // Decompose ematrix.
   Matrix3d rotation1, rotation2;
@@ -137,8 +137,7 @@ int GetBestPoseFromEssentialMatrix(
                                        max_element);
 
   // Set the pose.
-  const Eigen::AngleAxisd rotation_angle_axis(rotations[max_index]);
-  *rotation = rotation_angle_axis.angle() * rotation_angle_axis.axis();
+  *rotation = rotations[max_index];
   *position = positions[max_index];
   return *max_element;
 }
