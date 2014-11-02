@@ -67,12 +67,6 @@ bool UncalibratedRelativePoseEstimator::EstimateModel(
     return false;
   }
 
-  for (const auto& correspondence : centered_correspondences) {
-    CHECK_LT(SquaredSampsonDistance(relative_pose.fundamental_matrix,
-                                    correspondence.feature1,
-                                    correspondence.feature2), 1e-12);
-  }
-
   // Only consider fundamental matrices that we can decompose focal lengths
   // from.
   if (!FocalLengthsFromFundamentalMatrix(
