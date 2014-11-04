@@ -331,6 +331,82 @@ TEST(Polynomial, SturmManyRoots) {
   }
 }
 
+
+
+
+TEST(Polynomial, JenkinsTraubRootsInvalidPolynomialOfZeroLengthIsRejected) {
+  // Vector poly(0) is an ambiguous constructor call, so
+  // use the constructor with explicit column count.
+  VectorXd poly(0, 1);
+  VectorXd real;
+  bool success = FindRealPolynomialRootsJenkinsTraub(poly, &real);
+  EXPECT_EQ(success, false);
+}
+
+TEST(Polynomial, JenkinsTraubRootsConstantPolynomialReturnsNoRoots) {
+  VectorXd poly = ConstantPolynomial(1.23);
+  VectorXd real;
+  bool success = FindRealPolynomialRootsJenkinsTraub(poly, &real);
+
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(real.size(), 0);
+}
+
+TEST(Polynomial, JenkinsTraubQuarticPolynomialWorks) {
+  static constexpr int N = 4;
+  const double roots[N] = { 1.23e-4, 1.23e-1, 1.23e+2, 1.23e+5 };
+  VectorXd poly = ConstantPolynomial(1.23);
+  for (int i = 0; i < N; ++i) {
+    poly = AddRealRoot(poly, roots[i]);
+  }
+
+  VectorXd real;
+  const bool success = FindRealPolynomialRootsJenkinsTraub(poly, &real);
+
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(real.size(), N);
+  real = SortVector(real);
+  test::ExpectArraysNear(N, real.data(), roots, kEpsilonLoose);
+}
+
+TEST(Polynomial, JenkinsTraubQuarticPolynomialWithTwoClustersOfCloseRootsWorks) {
+  static constexpr int N = 4;
+  const double roots[N] = { 1.23e-1, 2.46e-1, 1.23e+5, 2.46e+5 };
+   VectorXd poly = ConstantPolynomial(1.23);
+  for (int i = 0; i < N; ++i) {
+    poly = AddRealRoot(poly, roots[i]);
+  }
+
+  VectorXd real;
+  const bool success = FindRealPolynomialRootsJenkinsTraub(poly, &real);
+
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(real.size(), N);
+  real = SortVector(real);
+  test::ExpectArraysNear(N, real.data(), roots, kEpsilonLoose);
+}
+
+TEST(Polynomial, JenkinsTraubManyRoots) {
+  static constexpr int N = 50;
+  VectorXd poly = ConstantPolynomial(1.23);
+  VectorXd roots = VectorXd::Random(N);
+  roots = SortVector(roots);
+
+  for (int i = 0; i < N; ++i) {
+    poly = AddRealRoot(poly, roots[i]);
+  }
+
+  VectorXd real;
+  const bool success = FindRealPolynomialRootsJenkinsTraub(poly, &real);
+  EXPECT_EQ(success, true);
+  EXPECT_EQ(real.size(), N);
+  for (int i = 0; i < real.size(); i++) {
+    EXPECT_NEAR(EvaluatePolynomial(poly, real[i]), 0, kEpsilonLoose);
+  }
+}
+
+
+
 TEST(Polynomial, FindRealRootIterativeTest) {
   VectorXd polynomial(6);
   // (x - 3) * (x + 4) * (x + 5) * (x - 6) * (x + 7)

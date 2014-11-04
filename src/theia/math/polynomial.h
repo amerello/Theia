@@ -102,7 +102,16 @@ bool FindRealPolynomialRoots(const Eigen::VectorXd& polynomial,
 bool FindRealPolynomialRootsSturm(const Eigen::VectorXd& coeffs,
                                   Eigen::VectorXd* real_roots);
 
-// An iterative solver to find the closest root based on an initial guess.
+// The Jenkins-Traub method is a fast globally convergent iterative method for
+// finding roots of polynomials with real coefficients. It was designed for
+// machine precision and is robust ot most polynomial types. One known case
+// where is struggles is for sparse polynomials e.g., x^n + 1 = 0. This is the
+// recommended method for iteratively computing polynomial roots.
+bool FindRealPolynomialRootsJenkinsTraub(const Eigen::VectorXd& coeffs,
+                                         Eigen::VectorXd* real_roots);
+
+// Finds a single polynomials root iteratively with the starting position x0 and
+// guaranteed precision of epsilon.
 double FindRealRootIterative(const Eigen::VectorXd& polynomial,
                              const double x0,
                              const double epsilon,

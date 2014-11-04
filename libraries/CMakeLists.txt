@@ -11,6 +11,9 @@ ADD_SUBDIRECTORY(cimg)
 # Add Optimo
 ADD_SUBDIRECTORY(optimo)
 
+# Add rpoly
+ADD_SUBDIRECTORY(rpoly)
+
 # Add Statx
 ADD_SUBDIRECTORY(statx)
 

@@ -75,6 +75,7 @@
 #include <cmath>
 #include <complex>
 #include <queue>
+#include <rpoly/rpoly.h>
 #include <vector>
 
 #include "theia/math/sturm_chain.h"
@@ -320,7 +321,7 @@ bool FindRealPolynomialRootsSturm(const VectorXd& coeffs,
   VectorXd polynomial = RemoveLeadingZeros(coeffs);
   const int degree = polynomial.size() - 1;
   if (degree <= 4) {
-    return FindRealPolynomialRoots(coeffs, real_roots);
+    return FindRealPolynomialRoots(polynomial, real_roots);
   }
 
   InitRandomGenerator();
@@ -389,6 +390,28 @@ bool FindRealPolynomialRootsSturm(const VectorXd& coeffs,
       Eigen::Map<VectorXd>(computed_roots.data(), computed_roots.size());
 
   return true;
+}
+
+bool FindRealPolynomialRootsJenkinsTraub(const Eigen::VectorXd& coeffs,
+                                         Eigen::VectorXd* real_roots) {
+  VectorXd polynomial = RemoveLeadingZeros(coeffs);
+  const int degree = polynomial.size() - 1;
+  if (degree <= 4) {
+    return FindRealPolynomialRoots(polynomial, real_roots);
+  }
+
+  VectorXd real_roots_temp(degree);
+  VectorXd complex_roots(degree);
+  std::vector<int> info(degree, 0);
+
+  Rpoly::Rpoly rpoly;
+  const int num_roots = rpoly.eval(polynomial.data(),
+                                   degree,
+                                   real_roots_temp.data(),
+                                   complex_roots.data(),
+                                   info.data());
+  *real_roots = real_roots_temp.head(num_roots);
+  return num_roots > 0;
 }
 
 // An iterative solver to find the closest root based on an initial guess. We

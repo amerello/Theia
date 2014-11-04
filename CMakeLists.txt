@@ -221,6 +221,7 @@ INCLUDE_DIRECTORIES(
   ${gtest_SOURCE_DIR}
   ${hayai_SOURCE_DIR}
   ${optimo_SOURCE_DIR}
+  ${rpoly_SOURCE_DIR}
   ${statx_SOURCE_DIR}
   ${stlplus3_SOURCE_DIR}
   ${vlfeat_SOURCE_DIR})
