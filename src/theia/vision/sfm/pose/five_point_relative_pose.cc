@@ -314,7 +314,7 @@ bool FivePointRelativePose(const Vector2d image1_points[5],
 
   // Step 5. Extract real roots of the 10th degree polynomial.
   Eigen::VectorXd roots;
-  FindRealPolynomialRoots(n.transpose().reverse(), &roots);
+  FindRealPolynomialRootsJenkinsTraub(n.transpose().reverse(), &roots);
 
   essential_matrices->reserve(roots.size());
   static const double kTolerance = 1e-12;
