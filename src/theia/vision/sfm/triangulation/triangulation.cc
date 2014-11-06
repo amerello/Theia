@@ -54,6 +54,7 @@ using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 
 // Given either a fundamental or essential matrix and two corresponding images
 // points such that ematrix * point_right produces a line in the left image,
@@ -106,7 +107,7 @@ bool Triangulate(const Matrix3x4d& pose1,
                  const Matrix3x4d& pose2,
                  const Vector2d& point_left,
                  const Vector2d& point_right,
-                 Vector3d* triangulated_point) {
+                 Vector4d* triangulated_point) {
   Matrix3d fmatrix;
   FundamentalMatrixFromProjectionMatrices(pose1.data(),
                                           pose2.data(),
@@ -130,7 +131,7 @@ bool TriangulateDLT(const Matrix3x4d& pose_left,
                     const Matrix3x4d& pose_right,
                     const Vector2d& point_left,
                     const Vector2d& point_right,
-                    Vector3d* triangulated_point) {
+                    Vector4d* triangulated_point) {
   Matrix4d design_matrix;
   design_matrix.row(0) = point_left[0] * pose_left.row(2) - pose_left.row(0);
   design_matrix.row(1) = point_left[1] * pose_left.row(2) - pose_left.row(1);
@@ -138,20 +139,15 @@ bool TriangulateDLT(const Matrix3x4d& pose_left,
   design_matrix.row(3) = point_right[1] * pose_right.row(2) - pose_right.row(1);
 
   // Extract nullspace.
-  Eigen::Vector4d homog_triangulated_point =
+  *triangulated_point =
       design_matrix.jacobiSvd(Eigen::ComputeFullV).matrixV().rightCols<1>();
-  if (homog_triangulated_point[3] == 0) {
-    return false;
-  }
-
-  *triangulated_point = homog_triangulated_point.hnormalized();
-  return true;
+  return (*triangulated_point)[3] != 0;
 }
 
 // Triangulates N views by computing SVD that minimizes the error.
 bool TriangulateNViewSVD(const std::vector<Matrix3x4d>& poses,
                          const std::vector<Vector2d>& points,
-                         Vector3d* triangulated_point) {
+                         Vector4d* triangulated_point) {
   CHECK_EQ(poses.size(), points.size());
 
   MatrixXd design_matrix(3 * points.size(), 4 + points.size());
@@ -162,20 +158,15 @@ bool TriangulateNViewSVD(const std::vector<Matrix3x4d>& poses,
   }
 
   // Computing SVD on A'A is more efficient and gives the same null-space.
-  Eigen::Vector4d homog_triangulated_point =
+  *triangulated_point =
       (design_matrix.transpose() * design_matrix).jacobiSvd(Eigen::ComputeFullV)
           .matrixV().rightCols<1>().head(4);
-  if (homog_triangulated_point[3] == 0) {
-    return false;
-  }
-
-  *triangulated_point = homog_triangulated_point.hnormalized();
-  return true;
+  return (*triangulated_point)[3] != 0;;
 }
 
 bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
                       const std::vector<Vector2d>& points,
-                      Vector3d* triangulated_point) {
+                      Vector4d* triangulated_point) {
   CHECK_EQ(poses.size(), points.size());
 
   Matrix4d design_matrix = Matrix4d::Zero();
@@ -188,20 +179,14 @@ bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
   }
 
   Eigen::SelfAdjointEigenSolver<Matrix4d> eigen_solver(design_matrix);
-  Eigen::Vector4d homog_triangulated_point = eigen_solver.eigenvectors().col(0);
-  if (homog_triangulated_point[3] == 0) {
-    return false;
-  }
-
-  *triangulated_point = homog_triangulated_point.hnormalized();
-  return true;
+  *triangulated_point = eigen_solver.eigenvectors().col(0);
+  return (*triangulated_point)[3] != 0;
 }
 
 bool IsTriangulatedPointInFrontOfCameras(
     const FeatureCorrespondence& correspondence,
     const Matrix3d& rotation,
     const Vector3d& position) {
-
   const Vector3d dir1 = correspondence.feature1.homogeneous();
   const Vector3d dir2 =
       rotation.transpose() * correspondence.feature2.homogeneous();

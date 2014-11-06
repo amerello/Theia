@@ -55,6 +55,7 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 
 // Creates a test scenario from ground truth 3D points and ground truth rotation
 // and translation. Projection (i.e., image) noise is optional (set to 0 for no
@@ -95,14 +96,14 @@ void CheckReprojectionError(const std::vector<Vector2d>& image_1_points,
 
   for (int i = 0; i < image_1_points.size(); i++) {
     // Triangulate the world point.
-    Vector3d triangulated_point;
+    Vector4d triangulated_point;
     CHECK(TriangulateDLT(left_projection, right_projection,
                          image_1_points[i], image_2_points[i],
                          &triangulated_point));
     const Vector3d left_point =
-        left_projection * triangulated_point.homogeneous();
+        left_projection * triangulated_point;
     const Vector3d right_point =
-        right_projection * triangulated_point.homogeneous();
+        right_projection * triangulated_point;
 
     // Compute reprojection error.
     const double img_1_error =

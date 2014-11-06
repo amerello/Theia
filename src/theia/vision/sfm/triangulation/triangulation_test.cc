@@ -56,9 +56,9 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 
 double ReprojectionError(const Matrix3x4d& pose,
-                         const Vector3d& world_point,
+                         const Vector4d& world_point,
                          const Vector2d& image_point) {
-  const Vector3d reprojected_point = pose * world_point.homogeneous();
+  const Vector3d reprojected_point = pose * world_point;
   const double sq_reproj_error =
       (reprojected_point.hnormalized() - image_point).squaredNorm();
   return sq_reproj_error;
@@ -89,7 +89,7 @@ void TestTriangulationDLTBasic(const Vector3d& point_3d,
   }
 
   // Triangulate with DLT.
-  Vector3d dlt_triangulated_point;
+  Vector4d dlt_triangulated_point;
   EXPECT_TRUE(
       TriangulateDLT(pose_left.matrix(), pose_right.matrix(), image_point_1,
                      image_point_2, &dlt_triangulated_point));
@@ -129,7 +129,7 @@ void TestTriangulationBasic(const Vector3d& point_3d,
   }
 
   // Triangulate with Optimal.
-  Vector3d triangulated_point;
+  Vector4d triangulated_point;
   EXPECT_TRUE(Triangulate(pose1.matrix(), pose2.matrix(), image_point1,
                           image_point2, &triangulated_point));
 
@@ -214,7 +214,7 @@ void TestTriangulationManyPoints(const double projection_noise,
       }
     }
 
-    Vector3d triangulated_point;
+    Vector4d triangulated_point;
     ASSERT_TRUE(TriangulateNView(poses, image_points, &triangulated_point));
 
     // Check the reprojection error.

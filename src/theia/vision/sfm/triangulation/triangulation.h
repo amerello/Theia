@@ -53,35 +53,35 @@ bool Triangulate(const Matrix3x4d& pose_left,
                  const Matrix3x4d& pose_right,
                  const Eigen::Vector2d& point_left,
                  const Eigen::Vector2d& point_right,
-                 Eigen::Vector3d* triangulated_point);
+                 Eigen::Vector4d* triangulated_point);
 
 // Triangulates 2 posed views using the DLT method from HZZ 12.2 p 312. The
-// inputs are the projection matrices and the unit image observations. Returns
-// true on success and false on failure (e.g., if the point is at infinity).
+// inputs are the projection matrices and the image observations. Returns true
+// on success and false on failure (e.g., if the point is at infinity).
 bool TriangulateDLT(const Matrix3x4d& pose_left,
                     const Matrix3x4d& pose_right,
                     const Eigen::Vector2d& point_left,
                     const Eigen::Vector2d& point_right,
-                    Eigen::Vector3d* triangulated_point);
+                    Eigen::Vector4d* triangulated_point);
 
 // Computes n-view triangulation by computing the SVD that wil approximately
 // minimize reprojection error. The inputs are the projection matrices and the
-// unit image observations. Returns true on success and false on failure (e.g.,
+// image observations. Returns true on success and false on failure (e.g.,
 // if the point is at infinity).
 bool TriangulateNViewSVD(
     const std::vector<Matrix3x4d>& poses,
     const std::vector<Eigen::Vector2d>& points,
-    Eigen::Vector3d* triangulated_point);
+    Eigen::Vector4d* triangulated_point);
 
 // Computes n-view triangulation by an efficient L2 minimization of the
 // algebraic error. This minimization is independent of the number of points, so
 // it is extremely scalable. It gives better reprojection errors in the results
 // and is significantly faster. The inputs are the projection matrices and the
-// unit image observations. Returns true on success and false on failure (e.g.,
-// if the point is at infinity).
+// image observations. Returns true on success and false on failure (e.g., if
+// the point is at infinity).
 bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
                       const std::vector<Eigen::Vector2d>& points,
-                      Eigen::Vector3d* triangulated_point);
+                      Eigen::Vector4d* triangulated_point);
 
 // Determines if the 3D point is in front of the camera or not. We can simply
 // compute the homogeneous ray intersection (closest point to two rays) and
