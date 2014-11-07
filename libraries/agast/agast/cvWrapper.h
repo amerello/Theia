@@ -1,5 +1,5 @@
 /*
-  cvWrapper - header file to define CvPoint in case openCV is not installed
+  cvWrapper - header file to define OpenCVPoint in case openCV is not installed
 
   Copyright (c) 2010, Elmar Mair
   All rights reserved.
@@ -31,11 +31,11 @@
 #ifndef CVWRAPPER_H_
 #define CVWRAPPER_H_
 
-typedef struct CvPoint
+typedef struct OpenCVPoint
 {
   int x;
   int y;
 }
-  CvPoint;
+  OpenCVPoint;
 
 #endif /* CVWRAPPER_H_ */

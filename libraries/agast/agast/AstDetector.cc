@@ -33,7 +33,7 @@
 using namespace std;
 using namespace agast;
 
-void AstDetector::score(const unsigned char* i, const std::vector<CvPoint>& corners_all)
+void AstDetector::score(const unsigned char* i, const std::vector<OpenCVPoint>& corners_all)
 {
 	unsigned int n=0;
     unsigned int num_corners=corners_all.size();
@@ -59,8 +59,8 @@ void AstDetector::score(const unsigned char* i, const std::vector<CvPoint>& corn
         scores[n] = cornerScore(i + corners_all[n].y*xsize + corners_all[n].x);
 }
 
-void AstDetector::nms(const unsigned char* im, const std::vector<CvPoint>& corners_all,
-		std::vector<CvPoint>& corners_nms)
+void AstDetector::nms(const unsigned char* im, const std::vector<OpenCVPoint>& corners_all,
+		std::vector<OpenCVPoint>& corners_nms)
 {
 	score(im,corners_all);
 	nonMaximumSuppression(corners_all, corners_nms);

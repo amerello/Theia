@@ -94,7 +94,7 @@ void BriskScaleSpace::getKeypoints(const uint8_t _threshold,
   // assign thresholds
   threshold_ = _threshold;
   safeThreshold_ = threshold_ * safetyFactor_;
-  std::vector<std::vector<CvPoint> > agastPoints;
+  std::vector<std::vector<OpenCVPoint> > agastPoints;
   agastPoints.resize(layers_);
 
   // go through the octaves and intra layers and calculate fast corner scores:
@@ -108,7 +108,7 @@ void BriskScaleSpace::getKeypoints(const uint8_t _threshold,
     // just do a simple 2d subpixel refinement...
     const int num = agastPoints[0].size();
     for (int n = 0; n < num; n++) {
-      const CvPoint& point = agastPoints.at(0)[n];
+      const OpenCVPoint& point = agastPoints.at(0)[n];
       // first check if it is a maximum:
       if (!isMax2D(0, point.x, point.y)) continue;
 
@@ -151,7 +151,7 @@ void BriskScaleSpace::getKeypoints(const uint8_t _threshold,
     const int num = agastPoints[i].size();
     if (i == layers_ - 1) {
       for (int n = 0; n < num; n++) {
-        const CvPoint& point = agastPoints.at(i)[n];
+        const OpenCVPoint& point = agastPoints.at(i)[n];
         // consider only 2D maxima...
         if (!isMax2D(i, point.x, point.y)) continue;
 
@@ -193,7 +193,7 @@ void BriskScaleSpace::getKeypoints(const uint8_t _threshold,
     } else {
       // not the last layer:
       for (int n = 0; n < num; n++) {
-        const CvPoint& point = agastPoints.at(i)[n];
+        const OpenCVPoint& point = agastPoints.at(i)[n];
 
         // first check if it is a maximum:
         if (!isMax2D(i, point.x, point.y)) continue;
@@ -1256,7 +1256,7 @@ BriskLayer::BriskLayer(const BriskLayer& layer, int mode) {
 // Fast/Agast
 // wraps the agast class
 void BriskLayer::getAgastPoints(uint8_t threshold,
-                                std::vector<CvPoint>& keypoints) {
+                                std::vector<OpenCVPoint>& keypoints) {
   oastDetector_->set_threshold(threshold);
   oastDetector_->detect(img_.Data(), keypoints);
 

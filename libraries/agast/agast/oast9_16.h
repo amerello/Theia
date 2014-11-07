@@ -35,7 +35,7 @@
 #include <stdint.h>
 #include "AstDetector.h"
 
-struct CvPoint;
+struct OpenCVPoint;
 
 namespace agast{
 
@@ -46,9 +46,9 @@ namespace agast{
 			OastDetector9_16(int width, int height, int thr):AstDetector(width, height, thr){init_pattern();};
 			~OastDetector9_16(){}
 			void detect(const unsigned char* im,
-					std::vector<CvPoint>& keypoints);
+					std::vector<OpenCVPoint>& keypoints);
 			void nms(const unsigned char* im,
-					const std::vector<CvPoint>& keypoints, std::vector<CvPoint>& keypoints_nms);
+					const std::vector<OpenCVPoint>& keypoints, std::vector<OpenCVPoint>& keypoints_nms);
 			int get_borderWidth(){return borderWidth;}
 			int cornerScore(const unsigned char* p);
 

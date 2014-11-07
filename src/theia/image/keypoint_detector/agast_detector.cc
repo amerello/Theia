@@ -84,9 +84,9 @@ bool AgastDetector::DetectKeypoints(const FloatImage& image,
   // this an efficient if statement for repeated calls of DetectKeypoints. If it
   // is wasting too much time, we could use a function pointer here and
   // initialize it in the constructor based on the nonmax_suppresion parameter.
-  std::vector<struct CvPoint> ast_keypoints;
+  std::vector<struct OpenCVPoint> ast_keypoints;
   if (nonmax_suppression_) {
-    std::vector<struct CvPoint> ast_nms_keypoints;
+    std::vector<struct OpenCVPoint> ast_nms_keypoints;
 
     // Detect keypoints.
     ast_detector_->detect(uchar_image.Data(), ast_nms_keypoints);
@@ -100,7 +100,7 @@ bool AgastDetector::DetectKeypoints(const FloatImage& image,
   }
 
   keypoints->reserve(ast_keypoints.size());
-  for (struct CvPoint ast_point : ast_keypoints) {
+  for (struct OpenCVPoint ast_point : ast_keypoints) {
     Keypoint new_keypoint(ast_point.x, ast_point.y, Keypoint::AGAST);
     new_keypoint.set_strength(ast_detector_->cornerScore(
         uchar_image.Data() + ast_point.x + ast_point.y*uchar_image.Cols()));

@@ -37,15 +37,15 @@
 using namespace std;
 using namespace agast;
 
-void AstDetector::nonMaximumSuppression(const std::vector<CvPoint>& corners_all,
-		std::vector<CvPoint>& corners_nms)
+void AstDetector::nonMaximumSuppression(const std::vector<OpenCVPoint>& corners_all,
+		std::vector<OpenCVPoint>& corners_nms)
 {
 	int currCorner_ind;
 	int lastRow=0, next_lastRow=0;
-	vector<CvPoint>::const_iterator currCorner;
+	vector<OpenCVPoint>::const_iterator currCorner;
 	int lastRowCorner_ind=0, next_lastRowCorner_ind=0;
 	vector<int>::iterator nmsFlags_p;
-	vector<CvPoint>::iterator currCorner_nms;
+	vector<OpenCVPoint>::iterator currCorner_nms;
 	int j;
 	int numCorners_all=corners_all.size();
 	int nMaxCorners=corners_nms.capacity();

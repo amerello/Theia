@@ -75,7 +75,7 @@ class BriskLayer {
   BriskLayer(const BriskLayer& layer, int mode);
 
   // Fast/Agast without non-max suppression
-  void getAgastPoints(uint8_t threshold, std::vector<CvPoint>& keypoints);
+  void getAgastPoints(uint8_t threshold, std::vector<OpenCVPoint>& keypoints);
 
   // get scores - NOTE: this is in layer coordinates, not scale=1 coordinates!
   inline uint8_t getAgastScore(int x, int y, uint8_t threshold);

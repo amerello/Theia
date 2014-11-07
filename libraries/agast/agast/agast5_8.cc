@@ -44,11 +44,11 @@
 using namespace std;
 using namespace agast;
 
-void AgastDetector5_8::detect(const unsigned char* im, std::vector<CvPoint>& corners_all)
+void AgastDetector5_8::detect(const unsigned char* im, std::vector<OpenCVPoint>& corners_all)
 {
 	int total=0;
 	int nExpectedCorners=corners_all.capacity();
-	CvPoint h;
+	OpenCVPoint h;
 	register int x, y;
 	register int xsizeB=xsize - 2;
 	register int ysizeB=ysize - 1;
