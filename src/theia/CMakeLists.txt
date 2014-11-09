@@ -47,6 +47,9 @@ SET(THEIA_SRC
   image/keypoint_detector/brisk_detector.cc
   image/keypoint_detector/brisk_impl.cc
   image/keypoint_detector/sift_detector.cc
+  io/model_reader.cc
+  io/model_writer.cc
+  io/read_bundler_files.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc
   math/closed_form_polynomial_solver.cc
@@ -93,8 +96,6 @@ SET(THEIA_SRC
   vision/sfm/triangulation/triangulation.cc
   vision/sfm/view.cc
   vision/sfm/view_graph/view_graph.cc
-#  io/bundler_binary_file.cc
-#  io/bundler_text_file.cc
   )
 
 SET(THEIA_LIBRARY_DEPENDENCIES

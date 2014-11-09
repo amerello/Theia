@@ -229,4 +229,9 @@ double Camera::RadialDistortion2() const {
   return intrinsics()[RADIAL_DISTORTION_2];
 }
 
+void Camera::SetImageSize(const int image_width, const int image_height) {
+  image_size_[0] = image_width;
+  image_size_[1] = image_height;
+}
+
 }  // namespace theia

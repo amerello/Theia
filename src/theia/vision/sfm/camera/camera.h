@@ -148,6 +148,7 @@ class Camera {
   double RadialDistortion1() const;
   double RadialDistortion2() const;
 
+  void SetImageSize(const int image_width, const int image_height);
   int ImageWidth() const { return image_size_[0]; }
   int ImageHeight() const { return image_size_[1]; }
 

@@ -35,43 +35,68 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <gflags/gflags.h>
+#include <theia/theia.h>
+
+#include <algorithm>
+#include <memory>
 #include <string>
-#include <vector>
 
-#include "theia/io/bundler_text_file.h"
-#include "theia/io/bundler_binary_file.h"
 
-DEFINE_string(input_bundle_file, "",
-              "Input bundle text file to convert. Should end in .out");
-
-DEFINE_string(output_bundle_file, "",
-              "Output bundle file in binary format. Should end in .bin");
-
-// This function will load the sift descriptors from the key text files and
-// convert them to binary files.
-bool ConvertBundleFile(const std::string& input_bundle_file,
-                       const std::string& output_bundle_file) {
-  // Read text file.
-  std::vector<theia::Camera> camera;
-  std::vector<Eigen::Vector3d> world_points;
-  std::vector<Eigen::Vector3f> world_points_color;
-  std::vector<theia::BundleViewList> view_list;
-  CHECK(theia::ReadBundleTextFile(input_bundle_file, &camera, &world_points,
-                                   &world_points_color, &view_list));
-
-  // Write binary file.
-  CHECK(
-      theia::WriteBundleBinaryFile(output_bundle_file, camera, world_points,
-                                   world_points_color, view_list));
-  return true;
-}
+DEFINE_string(lists_file, "", "Input bundle lists file.");
+DEFINE_string(bundle_file, "", "Input bundle file.");
+DEFINE_string(output_model_file, "",
+              "Output model file in binary format.");
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   // Load the SIFT descriptors into the cameras.
-  CHECK(ConvertBundleFile(FLAGS_input_bundle_file, FLAGS_output_bundle_file));
+  std::unique_ptr<theia::Model> model(new theia::Model());
+  CHECK(
+      theia::ReadBundlerFiles(FLAGS_lists_file, FLAGS_bundle_file, model.get()))
+      << "Could not read Bundler files.";
 
+  // Check that the reprojection errors are sane.
+  int num_projections_behind_camera = 0;
+  std::vector<double> reprojection_errors;
+  for (const theia::TrackId track_id : model->TrackIds()) {
+    const theia::Track* track = CHECK_NOTNULL(model->Track(track_id));
+    for (const theia::ViewId view_id : track->ViewIds()) {
+      const theia::Feature* feature =
+          model->View(view_id)->GetFeature(track_id);
+      const Eigen::Vector2d pixel(feature->x, feature->y);
+
+      // Reproject the observations.
+      Eigen::Vector2d projection;
+      if (model->View(view_id)
+              ->Camera().ProjectPoint(track->Point(), &projection) < 0) {
+        ++num_projections_behind_camera;
+      }
+
+      // Compute reprojection error.
+      const double reprojection_error = (pixel - projection).norm();
+      reprojection_errors.emplace_back(reprojection_error);
+    }
+  }
+
+  std::sort(reprojection_errors.begin(), reprojection_errors.end());
+  const double mean_reprojection_error =
+      std::accumulate(reprojection_errors.begin(),
+                      reprojection_errors.end(),
+                      0.0) / static_cast<double>(reprojection_errors.size());
+  const double median_reprojection_error =
+      reprojection_errors[reprojection_errors.size() / 2];
+
+  LOG(INFO) << "\nNum views: " << model->NumViews()
+            << "\nNum 3D points: " << model->NumTracks()
+            << "\nNum observations: " << reprojection_errors.size()
+            << "\nNum reprojections behind camera: "
+            << num_projections_behind_camera
+            << "\nMean reprojection error = " << mean_reprojection_error
+            << "\nMedian reprojection_error = " << median_reprojection_error;
+
+  CHECK(WriteModel(*model, FLAGS_output_model_file))
+      << "Could not write out model file.";
   return 0;
 }

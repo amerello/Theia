@@ -56,12 +56,11 @@
 #include <GL/glut.h>
 #endif
 
-DEFINE_string(bundle_file, "", "Bundle file to be loaded.");
+DEFINE_string(model, "", "Model file to be viewe.");
 
 // Containers for the data.
 std::vector<theia::Camera> cameras;
 std::vector<Eigen::Vector3d> world_points;
-std::vector<Eigen::Vector3f> world_points_color;
 
 // Parameters for OpenGL.
 int mouse_down_x[3], mouse_down_y[3];
@@ -128,30 +127,30 @@ void DrawAxes(float length) {
   glPopAttrib();
 }
 
-void DrawCamera(const Eigen::Matrix<double, 3, 4>& pose) {
-  Eigen::Matrix4d camera_pose;
-  camera_pose << pose, 0, 0, 0, 1.0;
-  camera_pose = camera_pose.inverse();
+void DrawCamera(const theia::Camera& camera) {
+  const Eigen::Matrix3d rotation =
+      camera.GetOrientationAsRotationMatrix().transpose();
+  const Eigen::Vector3d position = camera.GetPosition();
 
   glPushMatrix();
   // Apply world pose transformation.
   GLdouble glm[16];
-  glm[0] = camera_pose(0, 0);
-  glm[1] = camera_pose(1, 0);
-  glm[2] = camera_pose(2, 0);
-  glm[3] = camera_pose(3, 0);
-  glm[4] = camera_pose(0, 1);
-  glm[5] = camera_pose(1, 1);
-  glm[6] = camera_pose(2, 1);
-  glm[7] = camera_pose(3, 1);
-  glm[8] = camera_pose(0, 2);
-  glm[9] = camera_pose(1, 2);
-  glm[10] = camera_pose(2, 2);
-  glm[11] = camera_pose(3, 2);
-  glm[12] = camera_pose(0, 3);
-  glm[13] = camera_pose(1, 3);
-  glm[14] = camera_pose(2, 3);
-  glm[15] = camera_pose(3, 3);
+  glm[0] = rotation(0, 0);
+  glm[1] = rotation(1, 0);
+  glm[2] = rotation(2, 0);
+  glm[3] = 0.0;
+  glm[4] = rotation(0, 1);
+  glm[5] = rotation(1, 1);
+  glm[6] = rotation(2, 1);
+  glm[7] = 0.0;
+  glm[8] = rotation(0, 2);
+  glm[9] = rotation(1, 2);
+  glm[10] = rotation(2, 2);
+  glm[11] = 0.0;
+  glm[12] = position[0];
+  glm[13] = position[1];
+  glm[14] = position[2];
+  glm[15] = 1.0;
   glMultMatrixd(glm);
 
   glScalef(camera_scale, camera_scale, camera_scale);
@@ -198,20 +197,17 @@ void RenderScene() {
   point_size_coords[2] = 0.0f;
   glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
 
-  glEnableClientState(GL_VERTEX_ARRAY);
-  glEnableClientState(GL_COLOR_ARRAY);
-  glVertexPointer(3, GL_DOUBLE, sizeof(Eigen::Vector3d),
-                  world_points[0].data());
-  glColorPointer(3, GL_FLOAT, sizeof(Eigen::Vector3f),
-                 world_points_color[0].data());
-  glDrawArrays(GL_POINTS, 0, world_points.size());
-  glDisableClientState(GL_VERTEX_ARRAY);
-  glDisableClientState(GL_COLOR_ARRAY);
+  // Draw the points.
+  glColor3f(0.0, 0.0, 0.0);
+  glBegin(GL_POINTS);
+  for (int i = 0; i < world_points.size(); i++) {
+    glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
+  }
 
   // Draw the cameras.
   if (draw_cameras) {
     for (int i = 0; i < cameras.size(); i++) {
-      DrawCamera(cameras[i].pose_.transformation_matrix());
+      DrawCamera(cameras[i]);
     }
   }
   glFlush();
@@ -314,20 +310,31 @@ int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
 
   // Output as a binary file.
-  static const std::string extension = ".bin";
-  const size_t ext_loc = FLAGS_bundle_file.rfind(extension);
-  std::vector<theia::BundleViewList> unused_view_list;
-  // Read the file as a binary file if the extension is .bin, read it as a text
-  // file otherwise.
-  if (ext_loc != std::string::npos) {
-    CHECK(
-        theia::ReadBundleBinaryFile(FLAGS_bundle_file, &cameras, &world_points,
-                                    &world_points_color, &unused_view_list));
-  } else {
-    CHECK(
-        theia::ReadBundleTextFile(FLAGS_bundle_file, &cameras, &world_points,
-                                  &world_points_color, &unused_view_list));
+  std::unique_ptr<theia::Model> model(new theia::Model());
+  CHECK(ReadModel(FLAGS_model, model.get()))
+      << "Could not read model file.";
+
+  // Set up world points.
+  world_points.reserve(model->NumTracks());
+  for (const theia::TrackId track_id : model->TrackIds()) {
+    const auto* track = model->Track(track_id);
+    if (track == nullptr || !track->IsEstimated()) {
+      continue;
+    }
+    world_points.emplace_back(track->Point().hnormalized());
   }
+
+  // Set up camera drawing.
+  cameras.reserve(model->NumViews());
+  for (const theia::ViewId view_id : model->ViewIds()) {
+    const auto* view = model->View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
+    }
+    cameras.emplace_back(view->Camera());
+  }
+
+  model.release();
 
   // Set up opengl and glut.
   glutInit(&argc, argv);

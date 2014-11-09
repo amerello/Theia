@@ -39,8 +39,8 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
+#include <fstream>  // NOLINT
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 

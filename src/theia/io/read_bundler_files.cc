@@ -32,20 +32,28 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/io/bundler_text_file.h"
+#include "theia/io/read_bundler_files.h"
 
 #include <Eigen/Core>
 #include <glog/logging.h>
-#include <theia/theia.h>
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
+#include <fstream>  // NOLINT
+#include <iostream>  // NOLINT
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "theia/vision/sfm/camera/camera.h"
+#include "theia/vision/sfm/model.h"
+#include "theia/vision/sfm/track.h"
+#include "theia/vision/sfm/types.h"
+#include "theia/vision/sfm/view.h"
+
 namespace theia {
+
+namespace {
 
 // Description of the list files from the Big SfM website:
 // http://www.cs.cornell.edu/projects/p2f/README_Dubrovnik6K.txt
@@ -69,8 +77,7 @@ namespace theia {
 // NOTE: We set the exif focal length to zero if it is not available (since 0 is
 // never a valid focal length).
 bool ReadListsFile(const std::string& list_filename,
-                   std::vector<std::string>* image_name,
-                   std::vector<double>* exif_focal_length) {
+                   Model* model) {
   std::ifstream ifs(list_filename.c_str(), std::ios::in);
   if (!ifs.is_open()) {
     LOG(ERROR) << "Cannot read the list file from " << list_filename;
@@ -86,7 +93,9 @@ bool ReadListsFile(const std::string& list_filename,
       break;
     }
 
-    image_name->push_back(filename);
+    const ViewId view_id = model->AddView(filename);
+    CHECK_NE(view_id, kInvalidViewId) << "View " << filename
+                                      << " could not be added.";
 
     // Check to see if the exif focal length is given.
     double focal_length = 0;
@@ -95,10 +104,18 @@ bool ReadListsFile(const std::string& list_filename,
       ifs >> temp;
       ifs >> focal_length;
     }
-    exif_focal_length->push_back(focal_length);
+
+    if (focal_length != 0) {
+      model->MutableView(view_id)->MutableMetadata()->focal_length.value =
+          focal_length;
+      model->MutableView(view_id)->MutableMetadata()->focal_length.is_set =
+          true;
+    }
   }
   return true;
 }
+
+}  // namespace
 
 // The bundle files contain the estimated scene and camera geometry have the
 // following format:
@@ -137,11 +154,20 @@ bool ReadListsFile(const std::string& list_filename,
 // towards the top of the image. Thus, (-w/2, -h/2) is the lower-left corner of
 // the image, and (w/2, h/2) is the top-right corner (where w and h are the
 // width and height of the image).
-bool ReadBundleTextFile(const std::string& bundle_file,
-                        std::vector<theia::Camera>* camera,
-                        std::vector<Eigen::Vector3d>* world_points,
-                        std::vector<Eigen::Vector3f>* world_points_color,
-                        std::vector<BundleViewList>* view_list) {
+bool ReadBundlerFiles(const std::string& lists_file,
+                      const std::string& bundle_file,
+                      Model* model) {
+  CHECK_NOTNULL(model);
+  CHECK_EQ(model->NumViews(), 0)
+      << "An empty model must be provided to load a bundler dataset.";
+  CHECK_EQ(model->NumTracks(), 0)
+      << "An empty model must be provided to load a bundler dataset.";
+
+  if (!ReadListsFile(lists_file, model)) {
+    LOG(ERROR) << "Could not read the lists file from " << lists_file;
+    return false;
+  }
+
   // Read in num cameras, num points.
   std::ifstream ifs(bundle_file.c_str(), std::ios::in);
   if (!ifs.is_open()) {
@@ -157,15 +183,18 @@ bool ReadBundleTextFile(const std::string& bundle_file,
   const char* p = header_string.c_str();
   char* p2;
   const int num_cameras = strtol(p, &p2, 10);
+  CHECK_EQ(num_cameras, model->NumViews())
+      << "The number of cameras in the lists file is not equal to the number "
+         "of cameras in the bundle file. Data is corrupted!";
+
   p = p2;
   const int num_points = strtol(p, &p2, 10);
 
-  // Allocate the proper number of cameras.
-  camera->clear();
-  camera->resize(num_cameras);
-
   // Read in the camera params.
   for (int i = 0; i < num_cameras; i++) {
+    model->MutableView(i)->SetEstimated(true);
+    Camera* camera = model->MutableView(i)->MutableCamera();
+
     // Read in focal length, radial distortion.
     std::string internal_params;
     std::getline(ifs, internal_params);
@@ -177,8 +206,12 @@ bool ReadBundleTextFile(const std::string& bundle_file,
     const double k2 = strtod(p, &p2);
     p = p2;
 
-    const Eigen::Matrix3d calibration_matrix =
-        Eigen::DiagonalMatrix<double, 3>(focal_length, focal_length, 1.0);
+    camera->SetFocalLength(focal_length);
+    camera->SetRadialDistortion(k1, k2);
+    // These cameras (and the features below) already have the principal point
+    // removed.
+    camera->SetPrincipalPoint(0, 0);
+
     // Read in rotation (row-major).
     Eigen::Matrix3d rotation;
     for (int r = 0; r < 3; r++) {
@@ -200,8 +233,15 @@ bool ReadBundleTextFile(const std::string& bundle_file,
       translation(j) = strtod(p, &p2);
       p = p2;
     }
-    camera->at(i).pose_.InitializePose(rotation, translation,
-                                       calibration_matrix, k1, k2, 0.0, 0.0);
+
+    rotation.row(1) *= -1.0;
+    rotation.row(2) *= -1.0;
+    translation(1) *= -1.0;
+    translation(2) *= -1.0;
+
+    const Eigen::Vector3d position = -rotation.transpose() * translation;
+    camera->SetPosition(position);
+    camera->SetOrientationFromRotationMatrix(rotation);
 
     if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
       std::cout << "\r Loading parameters for camera " << i + 1 << " / "
@@ -211,30 +251,24 @@ bool ReadBundleTextFile(const std::string& bundle_file,
   std::cout << std::endl;
 
   // Read in each 3D point and correspondences.
-  world_points->clear();
-  world_points->resize(num_points);
-  world_points_color->clear();
-  world_points_color->resize(num_points);
-  view_list->clear();
-  view_list->resize(num_points);
-
   for (int i = 0; i < num_points; i++) {
     // Read position.
-    std::string position;
-    std::getline(ifs, position);
-    p = position.c_str();
+    std::string position_str;
+    std::getline(ifs, position_str);
+    p = position_str.c_str();
+    Eigen::Vector3d position;
     for (int j = 0; j < 3; j++) {
-      world_points->at(i)(j) = strtod(p, &p2);
+      position(j) = strtod(p, &p2);
       p = p2;
     }
 
     // Read color.
-    std::string color;
-    std::getline(ifs, color);
-    p = color.c_str();
+    std::string color_str;
+    std::getline(ifs, color_str);
+    p = color_str.c_str();
+    Eigen::Vector3f color;
     for (int j = 0; j < 3; j++) {
-      world_points_color->at(i)(j) =
-          static_cast<float>(strtol(p, &p2, 10)) / 255.0;
+      color(j) = static_cast<float>(strtol(p, &p2, 10)) / 255.0;
       p = p2;
     }
 
@@ -246,27 +280,36 @@ bool ReadBundleTextFile(const std::string& bundle_file,
     p = p2;
 
     // Reserve the view list for this 3D point.
-    view_list->at(i).reserve(num_views);
-
+    std::vector<std::pair<std::string, Feature> > track;
     for (int j = 0; j < num_views; j++) {
       // Camera key x y
       const int camera_index = strtol(p, &p2, 10);
       p = p2;
-      const int sift_key_index = strtol(p, &p2, 10);
+      // Returns the index of the sift descriptor in the camera for this track.
+      strtol(p, &p2, 10);
       p = p2;
       const float x_pos = strtof(p, &p2);
       p = p2;
       const float y_pos = strtof(p, &p2);
       p = p2;
-      CHECK_EQ(x_pos, 0.0);
-      CHECK_EQ(y_pos, 0.0);
 
-      CHECK_LT(camera_index, camera->size()) << "string = " << view_list_string;
+      const std::string& camera_name =
+          CHECK_NOTNULL(model->View(camera_index))->Name();
+      // NOTE: We flip the pixel directions to compensate for Bundlers different
+      // coordinate system in images.
+      Feature feature;
+      feature.x = x_pos;
+      feature.y = -y_pos;
 
       // Push the sift key correspondence to the view list.
-      view_list->at(i).push_back(
-          BundleSiftKeyReference(camera_index, sift_key_index, x_pos, y_pos));
+      track.emplace_back(camera_name, feature);
     }
+
+    const TrackId track_id = model->AddTrack(track);
+    CHECK_NE(track_id, kInvalidTrackId)
+        << "Could not add a track to the model!";
+    model->MutableTrack(track_id)->SetEstimated(true);
+    *model->MutableTrack(track_id)->MutablePoint() = position.homogeneous();
 
     if ((i + 1) % 100 == 0 || i == num_points - 1) {
       std::cout << "\r Loading 3D points " << i + 1 << " / " << num_points

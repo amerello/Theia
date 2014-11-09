@@ -10,7 +10,7 @@ find_package(GLUT REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-ADD_EXECUTABLE(view_bundle_file view_bundle_file.cc)
-TARGET_LINK_LIBRARIES(view_bundle_file theia ${GFLAGS_LIBRARIES}
+ADD_EXECUTABLE(view_model view_model.cc)
+TARGET_LINK_LIBRARIES(view_model theia ${GFLAGS_LIBRARIES}
   ${OPENGL_LIBRARIES}
   ${GLUT_LIBRARY})

@@ -230,7 +230,7 @@ INCLUDE("${CMAKE_MODULE_PATH}/OptimizeTheiaCompilerFlags.cmake")
 OptimizeTheiaCompilerFlags()
 
 ADD_SUBDIRECTORY(src/theia)
-#ADD_SUBDIRECTORY(data_loader)
+ADD_SUBDIRECTORY(data_loader)
 
 IF (BUILD_TUTORIALS)
   MESSAGE("-- Build the tutorials.")

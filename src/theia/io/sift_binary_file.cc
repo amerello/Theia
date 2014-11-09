@@ -38,8 +38,8 @@
 #include <glog/logging.h>
 #include <theia/theia.h>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
+#include <fstream>  // NOLINT
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 

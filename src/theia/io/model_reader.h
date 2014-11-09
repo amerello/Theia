@@ -32,34 +32,23 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IO_SIFT_BINARY_FILE_H_
-#define THEIA_IO_SIFT_BINARY_FILE_H_
+#ifndef THEIA_IO_MODEL_READER_H_
+#define THEIA_IO_MODEL_READER_H_
 
-#include <Eigen/Core>
 #include <string>
-#include <vector>
-
-#include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {
 
-// Reads a SIFT key files as computed by Lowe's SIFT software:
-// http://www.cs.ubc.ca/~lowe/keypoints/
-//
-// The vector keypoint will contain the x and y position, as well as the scale
-// and orientation of each feature. This variable may be set to NULL, in which
-// case the method ignores the keypoint vector.
-bool ReadSiftKeyBinaryFile(const std::string& input_sift_key_file,
-                           std::vector<Eigen::VectorXf>* descriptor,
-                           std::vector<Keypoint>* keypoint);
+class Model;
 
-// Outputs the SIFT features in the same format as Lowe's sift key files, but
-// stores it as a binary file for faster loading.
-bool WriteSiftKeyBinaryFile(
-    const std::string& output_sift_key_file,
-    const std::vector<Eigen::VectorXf>& descriptor,
-    const std::vector<Keypoint>& keypoint);
+// Reads the model from a binary file. All views and tracks are assumed to be
+// estimated. The ids of the views and tracks will not be preserved, but all
+// views and tracks will be present and complete.
+//
+// See //theia/vision/sfm/model.h for more details about the information
+// contained in a model.
+bool ReadModel(const std::string& input_file, Model* model);
 
 }  // namespace theia
 
-#endif  // THEIA_IO_SIFT_BINARY_FILE_H_
+#endif  // THEIA_IO_MODEL_READER_H_

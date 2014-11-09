@@ -32,14 +32,13 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IO_BUNDLER_TEXT_FILE_H_
-#define THEIA_IO_BUNDLER_TEXT_FILE_H_
+#ifndef THEIA_IO_SIFT_TEXT_FILE_H_
+#define THEIA_IO_SIFT_TEXT_FILE_H_
 
 #include <Eigen/Core>
 #include <string>
 #include <vector>
 
-#include "theia/io/bundler_text_file.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {
@@ -56,4 +55,4 @@ bool ReadSiftKeyTextFile(const std::string& sift_key_file,
 
 }  // namespace theia
 
-#endif  // THEIA_IO_BUNDLER_TEXT_FILE_H_
+#endif  // THEIA_IO_SIFT_TEXT_FILE_H_

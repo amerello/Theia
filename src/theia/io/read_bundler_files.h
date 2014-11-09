@@ -32,49 +32,34 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IO_BUNDLER_BINARY_FILE_H_
-#define THEIA_IO_BUNDLER_BINARY_FILE_H_
+#ifndef THEIA_IO_READ_BUNDLER_FILES_H_
+#define THEIA_IO_READ_BUNDLER_FILES_H_
 
-#include <Eigen/Core>
 #include <string>
-#include <vector>
-
-#include "theia/io/bundler_text_file.h"
-#include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {
 
-// Loads all information from a bundler file. The bundler file includes 3D
-// points, camera poses, camera intrinsics, descriptors, and 2D-3D matches. This
-// method will not load the descriptors from the sift key files, it will only
-// store the "references" to them in the view list.
+class Model;
+
+// Loads all information from a bundler file and the corresponding lists file
+// that provide the image names and EXIF focal lengths. The bundler file
+// includes 3D points, camera poses, camera intrinsics, descriptors, and 2D-3D
+// matches. This method will not load the descriptors from the sift key files
+// and it will ignore any SIFT descriptor information.
 //
 // Input params are as follows:
+//   lists_file: the list of image names from the bundler list file. The focal
+//       length is provided from EXIF data or set to 0 if no EXIF focal length
+//       is available.
 //   bundler_file: the file output by bundler containing the 3D reconstruction,
 //       camera poses, feature locations, and correspondences. Usually the file
 //       is named bundle.out
-//   camera: A vector of theia::Camera objects that contain pose information,
-//       descriptor information, and 2D-3D correspondences. The 3D point ids
-//       stored correspond to the position in the world_points vector.
-//   world_points: The 3D points from the reconstruction.
-//   world_points_color: The RGB color of the world points (0 to 1 float).
-//   view_list: The view list for each 3D point. The view list is a container
-//       where each element has a camera index, sift key index, and x,y pos.
-bool ReadBundleBinaryFile(const std::string& input_bundle_file,
-                          std::vector<Camera>* camera,
-                          std::vector<Eigen::Vector3d>* world_points,
-                          std::vector<Eigen::Vector3f>* world_points_color,
-                          std::vector<BundleViewList>* view_list);
-
-// Outputs the reconstruction contents as a Bundler file in binary format. This
-// is so that it may be loaded more quickly.
-bool WriteBundleBinaryFile(
-    const std::string& output_bundle_file,
-    const std::vector<Camera>& camera,
-    const std::vector<Eigen::Vector3d>& world_points,
-    const std::vector<Eigen::Vector3f>& world_points_color,
-    const std::vector<BundleViewList>& view_list);
+//   model: A Theia Model containing the camera, track, and point cloud
+//       information. See theia/vision/sfm/model.h for more information.
+bool ReadBundlerFiles(const std::string& lists_file,
+                      const std::string& bundle_file,
+                      Model* model);
 
 }  // namespace theia
 
-#endif  // THEIA_IO_BUNDLER_BINARY_FILE_H_
+#endif  // THEIA_IO_READ_BUNDLER_FILES_H_
