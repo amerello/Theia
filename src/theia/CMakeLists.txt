@@ -103,6 +103,7 @@ SET(THEIA_LIBRARY_DEPENDENCIES
   ${GFLAGS_LIBRARIES}
   ${GLOG_LIBRARIES}
   cimg
+  easyexif
   rpoly
   statx
   stlplus3

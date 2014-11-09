@@ -36,10 +36,12 @@
 #define THEIA_IMAGE_IMAGE_H_
 
 #include <cimg/CImg.h>
+#include <easyexif/exif.h>
 #include <glog/logging.h>
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>  // NOLINT
 #include <limits>
 #include <memory>
 #include <string>
@@ -69,13 +71,19 @@ template <typename T> class Image {
   Image(const Image<D>& image_to_copy);
 
   ~Image() {}
-
   // Image information
   int Rows() const;
   int Cols() const;
   int Width() const;
   int Height() const;
   int Channels() const;
+
+  // The focal length is set from the EXIF data. We estimate the focal length
+  // using the FocalplaneXResolution and FocalplaneYResolution values that
+  // describe the number of pixels per FocalPlaneResolutionUnits (e.g. pixels
+  // per mm) on the focal plane. This resolution can then be used to obtain the
+  // focal length value in pixels.
+  bool FocalLengthPixels(double* focal_length) const;
 
   // Returns the pixel value at (x, y). An optional third parameter can specify
   // the color channel.
@@ -120,6 +128,7 @@ template <typename T> class Image {
   explicit Image(const cimg_library::CImg<T>& image);
 
   cimg_library::CImg<T> image_;
+  EXIFInfo exif_parser_;
 };
 
 // ----------------- Implementation ----------------- //
@@ -128,16 +137,36 @@ template <typename T> class Image {
 template <typename T> Image<T>::Image(const std::string& filename) {
   // TODO(cmsweeney): Get EXIF data here as well.
   image_.load(filename.c_str());
+
+  // Read in the EXIF information. This forces us to re-open the file but that
+  // should not be a huge performance cost.
+  std::streampos file_size;
+  std::ifstream file(filename, std::ios::binary);
+
+  // get its size:
+  file.seekg(0, std::ios::end);
+  file_size = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  // read the data:
+  std::vector<unsigned char> jpeg_data(file_size);
+  file.read(reinterpret_cast<char*>(&jpeg_data[0]), file_size);
+
+  // TODO(cmsweeney): The exif parser returns a success code. We may want to log
+  // the success code.
+  exif_parser_.parseFrom(jpeg_data.data(), file_size);
 }
 
 template <typename T> Image<T>::Image(const Image<T>& image_to_copy) {
   image_ = image_to_copy.image_;
+  exif_parser_ = image_to_copy.exif_parser_;
 }
 
 // Copy function. This is a deep copy of the image.
 template <typename T> template <typename D>
 Image<T>::Image(const Image<D>& image_to_copy) {
   image_ = image_to_copy.image_;
+  exif_parser_ = image_to_copy.exif_parser_;
 }
 
 template <typename T> Image<T>::Image(const cimg_library::CImg<T>& image) {
@@ -162,6 +191,60 @@ template <typename T> int Image<T>::Height() const {
 
 template <typename T> int Image<T>::Channels() const {
   return image_.spectrum();
+}
+
+template <typename T>
+bool Image<T>::FocalLengthPixels(double* focal_length) const {
+  // All of these fields must be set.
+  if (exif_parser_.FocalLength > 0 &&
+      exif_parser_.FocalPlaneXResolution > 0 &&
+      exif_parser_.FocalPlaneYResolution > 0 &&
+      exif_parser_.FocalPlaneResolutionUnit > 1 &&
+      exif_parser_.FocalPlaneResolutionUnit <= 5) {
+    // Convert to mm.
+    double focal_length_x = exif_parser_.FocalPlaneXResolution;
+    double focal_length_y = exif_parser_.FocalPlaneYResolution;
+    if (focal_length_x != focal_length_y) {
+      VLOG(2) << "Can only extract EXIF focal lengths from images with square "
+                 "pixels.";
+      return false;
+    }
+
+    switch (exif_parser_.FocalPlaneResolutionUnit) {
+      case 2:
+        // Convert inches to mm.
+        focal_length_x /= 25.4;
+        focal_length_y /= 25.4;
+        break;
+      case 3:
+        // Convert centimeters to mm.
+        focal_length_x /= 10.0;
+        focal_length_y /= 10.0;
+        break;
+      case 4:
+        // Already in mm.
+        break;
+      case 5:
+        // Convert micrometers to mm.
+        focal_length_x *= 10.0;
+        focal_length_y *= 10.0;
+        break;
+      default:
+        break;
+    }
+
+    // Normalize for the image size in case the original size is different than
+    // the current size.
+    *focal_length =
+        (exif_parser_.FocalLength * focal_length_x) *
+        (this->Width() / static_cast<double>(exif_parser_.ImageWidth));
+    ;
+
+    return true;
+  }
+
+  // TODO(cmsweeney): We could try a CCD lookup here?
+  return false;
 }
 
 template <typename T>

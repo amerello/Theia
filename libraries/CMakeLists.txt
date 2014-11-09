@@ -8,6 +8,9 @@ ADD_SUBDIRECTORY(agast)
 # CImg for image input/output
 ADD_SUBDIRECTORY(cimg)
 
+# EasyExif for reading image metadata
+ADD_SUBDIRECTORY(easyexif)
+
 # Add Optimo
 ADD_SUBDIRECTORY(optimo)
 

@@ -50,6 +50,10 @@ using cimg_library::CImg;
 std::string img_filename =
     THEIA_TEST_DATA_DIR + std::string("/") + FLAGS_test_img;
 
+std::string exif_img_filename =
+    THEIA_TEST_DATA_DIR + std::string("/image/exif.jpg");
+
+
 #define ASSERT_RGB_IMG_EQ(cimg_img, theia_img, rows, cols)     \
   ASSERT_EQ(cimg_img.width(), theia_img.Cols());               \
   ASSERT_EQ(cimg_img.height(), theia_img.Rows());              \
@@ -136,6 +140,13 @@ TEST(Image, ConvertToRGBImage) {
 
   // Assert each pixel value is exactly the same!
   ASSERT_RGB_IMG_EQ(rgb_img, theia_img, rows, cols);
+}
+
+TEST(Image, FocalLengthEXIF) {
+  FloatImage exif_img(exif_img_filename);
+  double focal_length;
+  EXPECT_TRUE(exif_img.FocalLengthPixels(&focal_length));
+  EXPECT_NEAR(focal_length, 1304.84, 0.1);
 }
 
 }  // namespace theia

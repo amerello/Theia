@@ -217,6 +217,7 @@ INCLUDE_DIRECTORIES(
   ${agast_SOURCE_DIR}
   ${cimg_SOURCE_DIR}
   ${cimg_INCLUDE_DIR}
+  ${easyexif_INCLUDE_DIR}
   ${gtest_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR}
   ${hayai_SOURCE_DIR}
