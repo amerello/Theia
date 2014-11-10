@@ -60,6 +60,7 @@ struct EstimateTwoViewInfoOptions {
   double expected_ransac_confidence = 0.9999;
   int min_ransac_iterations = 10;
   int max_ransac_iterations = 1000;
+  bool use_mle = true;
 };
 
 // Estimates two view info for the given view pair from the correspondences. The

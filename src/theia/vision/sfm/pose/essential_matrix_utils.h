@@ -54,7 +54,8 @@ void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
 
 // Chooses the best pose of the 4 possible poses that can be computed from the
 // essential matrix. The best pose is chosen as the pose that triangulates the
-// most points in front of both cameras.
+// most points in front of both cameras and the number of triangulated points is
+// returned.
 int GetBestPoseFromEssentialMatrix(
     const Eigen::Matrix3d& essential_matrix,
     const std::vector<FeatureCorrespondence>& normalized_correspondences,

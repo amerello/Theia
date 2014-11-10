@@ -38,7 +38,6 @@
 #include <statx/distributions/evd/common.h>
 
 #include "theia/solvers/estimator.h"
-#include "theia/solvers/inlier_support.h"
 #include "theia/solvers/evsac_sampler.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
@@ -75,10 +74,7 @@ class Evsac : public SampleConsensusEstimator<ModelEstimator> {
                                 this->sorted_distances_,
                                 this->predictor_threshold_,
                                 this->fitting_method_);
-    QualityMeasurement* inlier_support =
-        new InlierSupport(this->ransac_params_.error_thresh);
-    return SampleConsensusEstimator<ModelEstimator>::Initialize(prosac_sampler,
-                                                                inlier_support);
+    return SampleConsensusEstimator<ModelEstimator>::Initialize(prosac_sampler);
   }
 
  protected:

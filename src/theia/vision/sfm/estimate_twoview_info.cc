@@ -99,6 +99,7 @@ bool EstimateTwoViewInfoCalibrated(
       options.max_sampson_error_pixels * options.max_sampson_error_pixels /
       (view1.Metadata().focal_length.value *
        view2.Metadata().focal_length.value);
+  ransac_options.use_mle = options.use_mle;
 
   RelativePose relative_pose;
   RansacSummary summary;

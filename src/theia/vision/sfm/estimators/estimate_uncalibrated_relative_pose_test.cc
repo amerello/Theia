@@ -96,7 +96,7 @@ void ExecuteRandomTest(const RansacParameters& options,
   UncalibratedRelativePose relative_pose;
   RansacSummary ransac_summary;
   EXPECT_TRUE(EstimateUncalibratedRelativePose(options,
-                                               RansacType::MLESAC,
+                                               RansacType::RANSAC,
                                                correspondences,
                                                &relative_pose,
                                                &ransac_summary));
@@ -124,6 +124,8 @@ void ExecuteRandomTest(const RansacParameters& options,
 
 TEST(EstimateUncalibratedRelativePose, AllInliersNoNoise) {
   RansacParameters options;
+  options.use_mle = true;
+  options.max_iterations = 1000;
   options.error_thresh = 2;
   options.failure_probability = 0.0001;
   const double kInlierRatio = 1.0;
@@ -149,6 +151,8 @@ TEST(EstimateUncalibratedRelativePose, AllInliersNoNoise) {
 
 TEST(EstimateUncalibratedRelativePose, AllInliersWithNoise) {
   RansacParameters options;
+  options.use_mle = true;
+  options.max_iterations = 1000;
   options.error_thresh = 2;
   options.failure_probability = 0.0001;
   const double kInlierRatio = 1.0;
@@ -174,6 +178,8 @@ TEST(EstimateUncalibratedRelativePose, AllInliersWithNoise) {
 
 TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
   RansacParameters options;
+  options.use_mle = true;
+  options.max_iterations = 1000;
   options.error_thresh = 2;
   options.failure_probability = 0.0001;
   const double kInlierRatio = 0.5;
@@ -199,6 +205,8 @@ TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
 
 TEST(EstimateUncalibratedRelativePose, OutliersWithNoise) {
   RansacParameters options;
+  options.use_mle = true;
+  options.max_iterations = 1000;
   options.error_thresh = 1;
   options.failure_probability = 0.0001;
   const double kInlierRatio = 0.5;

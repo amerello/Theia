@@ -59,7 +59,7 @@ Camera::Camera() {
   SetFocalLength(1.0);
   SetAspectRatio(1.0);
   SetSkew(0.0);
-  SetPrincipalPoint(0.5, 0.5);
+  SetPrincipalPoint(0.0, 0.0);
   SetRadialDistortion(0.0, 0.0);
 
   image_size_[0] = 1;

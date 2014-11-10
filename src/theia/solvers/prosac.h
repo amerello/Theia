@@ -41,7 +41,6 @@
 #include <vector>
 
 #include "theia/solvers/estimator.h"
-#include "theia/solvers/inlier_support.h"
 #include "theia/solvers/prosac_sampler.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
@@ -62,10 +61,7 @@ class Prosac : public SampleConsensusEstimator<ModelEstimator> {
   bool Initialize() {
     Sampler<Datum>* prosac_sampler =
         new ProsacSampler<Datum>(this->estimator_.SampleSize());
-    QualityMeasurement* inlier_support =
-        new InlierSupport(this->ransac_params_.error_thresh);
-    return SampleConsensusEstimator<ModelEstimator>::Initialize(
-        prosac_sampler, inlier_support);
+    return SampleConsensusEstimator<ModelEstimator>::Initialize(prosac_sampler);
   }
 };
 }  // namespace theia

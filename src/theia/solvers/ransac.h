@@ -40,7 +40,6 @@
 #include <vector>
 
 #include "theia/solvers/estimator.h"
-#include "theia/solvers/inlier_support.h"
 #include "theia/solvers/random_sampler.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
@@ -60,10 +59,7 @@ class Ransac : public SampleConsensusEstimator<ModelEstimator> {
   bool Initialize() {
     Sampler<Datum>* random_sampler =
         new RandomSampler<Datum>(this->estimator_.SampleSize());
-    QualityMeasurement* inlier_support =
-        new InlierSupport(this->ransac_params_.error_thresh);
-    return SampleConsensusEstimator<ModelEstimator>::Initialize(random_sampler,
-                                                                inlier_support);
+    return SampleConsensusEstimator<ModelEstimator>::Initialize(random_sampler);
   }
 };
 

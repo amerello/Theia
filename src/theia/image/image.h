@@ -238,8 +238,6 @@ bool Image<T>::FocalLengthPixels(double* focal_length) const {
     *focal_length =
         (exif_parser_.FocalLength * focal_length_x) *
         (this->Width() / static_cast<double>(exif_parser_.ImageWidth));
-    ;
-
     return true;
   }
 

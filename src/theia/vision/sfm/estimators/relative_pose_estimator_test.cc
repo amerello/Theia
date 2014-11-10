@@ -42,6 +42,7 @@
 
 #include "theia/math/util.h"
 #include "theia/util/random.h"
+#include "theia/vision/sfm/camera/camera.h"
 #include "theia/vision/sfm/estimators/relative_pose_estimator.h"
 #include "theia/vision/sfm/feature_correspondence.h"
 #include "theia/vision/sfm/pose/test_util.h"
@@ -120,28 +121,33 @@ TEST(RelativePoseEstimator, BasicTest) {
 }
 
 TEST(RelativePoseEstimator, BehindCamerasTest) {
-  const Matrix3d expected_rotation = Matrix3d::Identity();
-  const Vector3d expected_translation(-1, 0, 0);
-
-  // A point that we know is behind the camera.
-  const Vector3d point_3d(0, 0, -5);
-  const Vector3d proj_3d =
-      expected_rotation * point_3d + expected_translation;
-
-  FeatureCorrespondence feature;
-  feature.feature1 = point_3d.hnormalized();
-  feature.feature2 = proj_3d.hnormalized();
-
-  RelativePose pose;
-  pose.rotation = expected_rotation;
-  pose.position = -expected_rotation.transpose() * expected_translation;
-
-  // Calculates the essential matrix, this may return multiple solutions.
-  pose.essential_matrix =
-      CrossProductMatrix(expected_translation) * expected_rotation;
-
+  const Camera camera1;
   RelativePoseEstimator estimator;
-  EXPECT_EQ(std::numeric_limits<double>::max(), estimator.Error(feature, pose));
+  for (int i = 0; i < 1000; i++) {
+    Camera camera2;
+    camera2.SetOrientationFromAngleAxis(Vector3d::Random());
+    camera2.SetPosition(Vector3d::Random());
+
+    RelativePose pose;
+    pose.rotation = camera2.GetOrientationAsRotationMatrix();
+    pose.position = camera2.GetPosition();
+    const Vector3d translation = -pose.rotation * pose.position;
+    pose.essential_matrix = CrossProductMatrix(translation) * pose.rotation;
+
+    for (int j = 0; j < 100; j++) {
+      const Eigen::Vector4d point3d = Eigen::Vector4d::Random();
+      FeatureCorrespondence feature;
+      const double depth1 = camera1.ProjectPoint(point3d, &feature.feature1);
+      const double depth2 = camera2.ProjectPoint(point3d, &feature.feature2);
+
+      const double error = estimator.Error(feature, pose);
+      if (depth1 < 0 || depth2 < 0) {
+        EXPECT_EQ(error, std::numeric_limits<double>::max());
+      } else {
+        EXPECT_NE(error, std::numeric_limits<double>::max());
+      }
+    }
+  }
 }
 
 }  // namespace

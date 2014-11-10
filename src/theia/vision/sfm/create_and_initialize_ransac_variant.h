@@ -38,7 +38,6 @@
 #include <glog/logging.h>
 
 #include "theia/solvers/arrsac.h"
-#include "theia/solvers/mlesac.h"
 #include "theia/solvers/prosac.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/solvers/ransac.h"
@@ -51,8 +50,8 @@ namespace theia {
 enum RansacType {
   RANSAC = 0,
   PROSAC = 1,
-  MLESAC = 2,
-  ARRSAC = 3
+  // TODO(cmsweeney): Arrsac does not seem to work very fast...
+  ARRSAC = 2
 };
 
 // Factory method to create a ransac variant based on the specified options. The
@@ -66,9 +65,6 @@ CreateAndInitializeRansacVariant(
   switch(ransac_type) {
     case RansacType::RANSAC:
       ransac_variant.reset(new Ransac<Estimator>(ransac_options, estimator));
-      break;
-    case RansacType::MLESAC:
-      ransac_variant.reset(new Mlesac<Estimator>(ransac_options, estimator));
       break;
     case RansacType::PROSAC:
       ransac_variant.reset(new Prosac<Estimator>(ransac_options, estimator));

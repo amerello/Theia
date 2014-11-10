@@ -43,6 +43,8 @@
 #include <vector>
 
 #include "theia/solvers/estimator.h"
+#include "theia/solvers/inlier_support.h"
+#include "theia/solvers/mle_quality_measurement.h"
 #include "theia/solvers/quality_measurement.h"
 #include "theia/solvers/sampler.h"
 
@@ -57,7 +59,9 @@ struct RansacParameters {
       : error_thresh(-1),
         failure_probability(0.01),
         min_inlier_ratio(0.1),
+        min_iterations(1),
         max_iterations(std::numeric_limits<int>::max()),
+        use_mle(false),
         use_Tdd_test(false) {}
 
   // Error threshold to determin inliers for RANSAC (e.g., squared reprojection
@@ -74,7 +78,7 @@ struct RansacParameters {
   double min_inlier_ratio;
 
   // The minimum number of iterations required before exiting.
-  int min_iterations = 1;
+  int min_iterations;
 
   // Another way to specify the maximal number of RANSAC iterations. In effect,
   // the maximal number of iterations is set to min(max_ransac_iterations, T),
@@ -86,7 +90,12 @@ struct RansacParameters {
   // to set min_inlier_ratio and leave max_ransac_iterations to its default
   // value.
   // Per default, this variable is set to std::numeric_limits<int>::max().
-  int max_iterations = 1;
+  int max_iterations;
+
+  // Instead of the standard inlier count, use the Maximum Likelihood Estimate
+  // (MLE) to determine the best solution. Inliers are weighted by their error
+  // and outliers count as a constant penalty.
+  bool use_mle;
 
   // Whether to use the T_{d,d}, with d=1, test proposed in
   // Chum, O. and Matas, J.: Randomized RANSAC and T(d,d) test, BMVC 2002.
@@ -97,7 +106,7 @@ struct RansacParameters {
   // the correct pose will pass the test. Per default, the test is disabled.
   //
   // NOTE: Not currently implemented!
-  bool use_Tdd_test = false;
+  bool use_Tdd_test;
 };
 
 // A struct to hold useful outputs of Ransac-like methods.
@@ -139,14 +148,12 @@ template <class ModelEstimator> class SampleConsensusEstimator {
  protected:
   // This method is called from derived classes to set up the sampling scheme
   // and the method for computing inliers. It must be called by derived classes
-  // unless they override the Estimate(...) method.
+  // unless they override the Estimate(...) method. The method for computing
+  // inliers (standar inlier support or MLE) is determined by the ransac params.
   //
   // sampler: The class that instantiates the sampling strategy for this
   //   particular type of sampling consensus.
-  // quality_measurement: class that instantiates the quality measurement of
-  //   the data. This determines the stopping criterion.
-  bool Initialize(Sampler<Datum>* sampler,
-                  QualityMeasurement* quality_measurement);
+  bool Initialize(Sampler<Datum>* sampler);
 
   // Computes the maximum number of iterations required to ensure the inlier
   // ratio is the best with a probability corresponding to log_failure_prob.
@@ -184,16 +191,20 @@ SampleConsensusEstimator<ModelEstimator>::SampleConsensusEstimator(
 
 template <class ModelEstimator>
 bool SampleConsensusEstimator<ModelEstimator>::Initialize(
-    Sampler<Datum>* sampler,
-    QualityMeasurement* quality_measurement) {
+    Sampler<Datum>* sampler) {
   CHECK_NOTNULL(sampler);
-  CHECK_NOTNULL(quality_measurement);
   sampler_.reset(sampler);
   if (!sampler_->Initialize()) {
     return false;
   }
 
-  quality_measurement_.reset(quality_measurement);
+  if (ransac_params_.use_mle) {
+    quality_measurement_.reset(
+        new MLEQualityMeasurement(ransac_params_.error_thresh));
+  } else {
+    quality_measurement_.reset(
+        new InlierSupport(ransac_params_.error_thresh));
+  }
   return quality_measurement_->Initialize();
 }
 
@@ -239,7 +250,7 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
   for (summary->num_iterations = 0;
        summary->num_iterations < max_iterations;
        summary->num_iterations++) {
-      // Sample subset. Proceed if successfully sampled.
+    // Sample subset. Proceed if successfully sampled.
     std::vector<Datum> data_subset;
     if (!sampler_->Sample(data, &data_subset)) {
       continue;
@@ -263,13 +274,16 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
       // Update best model if error is the best we have seen.
       if (quality_measurement_->Compare(sample_quality, best_quality) ||
           best_quality == static_cast<double>(QualityMeasurement::INVALID)) {
+
         *best_model = temp_model;
         best_quality = sample_quality;
-        max_iterations = ComputeMaxIterations(
-            estimator_.SampleSize(),
-            std::max(quality_measurement_->GetInlierRatio(),
-                     ransac_params_.min_inlier_ratio),
-            log_failure_prob);
+        max_iterations =
+            std::min(ComputeMaxIterations(
+                         estimator_.SampleSize(),
+                         std::max(quality_measurement_->GetInlierRatio(),
+                                  ransac_params_.min_inlier_ratio),
+                         log_failure_prob),
+                     ransac_params_.max_iterations);
         if (max_iterations < ransac_params_.min_iterations) {
           max_iterations = ransac_params_.min_iterations;
         }

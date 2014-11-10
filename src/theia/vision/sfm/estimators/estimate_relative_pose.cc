@@ -55,7 +55,6 @@ bool EstimateRelativePose(
       CreateAndInitializeRansacVariant(ransac_type,
                                        ransac_params,
                                        relative_pose_estimator);
-
   // Estimate essential matrix.
   if (!ransac->Estimate(normalized_correspondences,
                         relative_pose,

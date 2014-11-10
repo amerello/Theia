@@ -84,7 +84,7 @@ bool RelativePoseEstimator::EstimateModel(
       relative_poses->push_back(relative_pose);
     }
   }
-  return true;
+  return relative_poses->size() > 0;
 }
 
 double RelativePoseEstimator::Error(
@@ -97,7 +97,6 @@ double RelativePoseEstimator::Error(
                                   correspondence.feature1,
                                   correspondence.feature2);
   }
-
   return std::numeric_limits<double>::max();
 }
 
