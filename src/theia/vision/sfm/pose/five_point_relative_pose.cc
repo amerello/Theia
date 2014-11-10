@@ -41,7 +41,6 @@
 #include <ctime>
 #include <vector>
 
-#include "theia/math/matrix/gauss_jordan.h"
 #include "theia/math/polynomial.h"
 #include "theia/vision/sfm/pose/util.h"
 
@@ -56,33 +55,11 @@ using Eigen::RowVector4d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 typedef Matrix<double, 3, 3, Eigen::RowMajor> RowMatrix3d;
 
 namespace {
-// Multiplies two polynomials over the same variable.
-template <int n1, int n2>
-Matrix<double, 1, n1 + n2 - 1> MultiplyPoly(const Matrix<double, 1, n1>& a,
-                                            const Matrix<double, 1, n2>& b) {
-  Matrix<double, 1, n1 + n2 - 1> poly = Matrix<double, 1, n1 + n2 - 1>::Zero();
-  for (int i = 0; i < a.cols(); i++)
-    for (int j = 0; j < b.cols(); j++)
-      poly[i + j] += a[i] * b[j];
-
-  return poly;
-}
-
-// Evaluates a given polynomial at the value x.
-template <int n>
-double EvaluatePoly(const Matrix<double, 1, n>& poly, double x) {
-  double val = 0;
-  for (int i = poly.cols() - 1; i > 0; i--) {
-    val += poly[i];
-    val *= x;
-  }
-  val += poly[0];
-  return val;
-}
 
 // Multiply two degree one polynomials of variables x, y, z.
 // E.g. p1 = a[0]x + a[1]y + a[2]z + a[3]
@@ -201,19 +178,6 @@ Matrix<double, 10, 20> BuildConstraintMatrix(
   return constraint_matrix;
 }
 
-// Efficient nullspace extraction based on the idea of QR decomposition on the 5
-// correspondences of the epipolar constraint. Instead of QR, we use
-// Gauss-Jordan for the same effect.
-Matrix<double, 9, 4> EfficientNullspaceExtraction(
-    const Matrix<double, 5, 9>& constraint) {
-  Matrix<double, 5, 9> constraint_copy(constraint);
-  GaussJordan(&constraint_copy);
-  Matrix<double, 4, 9> null_space;
-  null_space << constraint_copy.rightCols(4).transpose(),
-      -Matrix4d::Identity();
-  return null_space.transpose();
-}
-
 }  // namespace
 
 // Implementation of Nister from "An Efficient Solution to the Five-Point
@@ -241,80 +205,66 @@ bool FivePointRelativePose(const Vector2d image1_points[5],
         1.0;
   }
 
-  // Solve for right null space of the 5x9 matrix. NOTE: We use a
-  // super-efficient method that is a variation of the QR decomposition
-  // described in the Nister paper.  by roughly 5x.
-  Matrix<double, 9, 4> null_space =
-      EfficientNullspaceExtraction(epipolar_constraint);
+  const Eigen::FullPivLU<Matrix<double, 5, 9> > lu(epipolar_constraint);
+  if (lu.dimensionOfKernel() != 4) {
+    return false;
+  }
+  const Matrix<double, 9, 4>& null_space = lu.kernel();
 
   // Step 2. Expansion of the epipolar constraints Eq. 5 and 6 from Nister
   // paper.
-  Matrix<double, 10, 20> constraint_matrix = BuildConstraintMatrix(null_space);
+  const Matrix<double, 10, 20> constraint_matrix =
+      BuildConstraintMatrix(null_space);
 
-  // Step 3. Gauss-Jordan Elimination with partial pivoting on constraint
-  // matrix.
-  GaussJordan(&constraint_matrix);
+  // Step 3. Eliminate part of the matrix to isolate polynomials in z.
+  const Matrix<double, 10, 10>& eliminated_matrix =
+      constraint_matrix.block<10, 10>(0, 0).partialPivLu()
+          .solve(constraint_matrix.block<10, 10>(0, 10));
 
-  // Step 4. Expand determinant polynomial of 3x3 polynomial B.
-  // Create matrix B. Horribly ugly, but not sure if there's a better way to do
-  // it!
-  RowVector4d b11(constraint_matrix(4, 12),
-                  constraint_matrix(4, 11) - constraint_matrix(5, 12),
-                  constraint_matrix(4, 10) - constraint_matrix(5, 11),
-                  -constraint_matrix(5, 10));
-  RowVector4d b12(constraint_matrix(4, 15),
-                  constraint_matrix(4, 14) - constraint_matrix(5, 15),
-                  constraint_matrix(4, 13) - constraint_matrix(5, 14),
-                  -constraint_matrix(5, 13));
-  Matrix<double, 1, 5> b13;
-  b13 << constraint_matrix(4, 19),
-      constraint_matrix(4, 18) - constraint_matrix(5, 19),
-      constraint_matrix(4, 17) - constraint_matrix(5, 18),
-      constraint_matrix(4, 16) - constraint_matrix(5, 17),
-      -constraint_matrix(5, 16);
-  RowVector4d b21(constraint_matrix(6, 12),
-                  constraint_matrix(6, 11) - constraint_matrix(7, 12),
-                  constraint_matrix(6, 10) - constraint_matrix(7, 11),
-                  -constraint_matrix(7, 10));
-  RowVector4d b22(constraint_matrix(6, 15),
-                  constraint_matrix(6, 14) - constraint_matrix(7, 15),
-                  constraint_matrix(6, 13) - constraint_matrix(7, 14),
-                  -constraint_matrix(7, 13));
-  Matrix<double, 1, 5> b23;
-  b23 << constraint_matrix(6, 19),
-      constraint_matrix(6, 18) - constraint_matrix(7, 19),
-      constraint_matrix(6, 17) - constraint_matrix(7, 18),
-      constraint_matrix(6, 16) - constraint_matrix(7, 17),
-      -constraint_matrix(7, 16);
-  RowVector4d b31(constraint_matrix(8, 12),
-                  constraint_matrix(8, 11) - constraint_matrix(9, 12),
-                  constraint_matrix(8, 10) - constraint_matrix(9, 11),
-                  -constraint_matrix(9, 10));
-  RowVector4d b32(constraint_matrix(8, 15),
-                  constraint_matrix(8, 14) - constraint_matrix(9, 15),
-                  constraint_matrix(8, 13) - constraint_matrix(9, 14),
-                  -constraint_matrix(9, 13));
-  Matrix<double, 1, 5> b33;
-  b33 << constraint_matrix(8, 19),
-      constraint_matrix(8, 18) - constraint_matrix(9, 19),
-      constraint_matrix(8, 17) - constraint_matrix(9, 18),
-      constraint_matrix(8, 16) - constraint_matrix(9, 17),
-      -constraint_matrix(9, 16);
+  // Step 4. Create the matrix B whose elements are polynomials in z.
+  VectorXd gj_matrix[3][3];
+  for (int i = 0; i < 3; i++) {
+    const int row = 2 * i + 4;
+    gj_matrix[i][0] =
+        Vector4d(-eliminated_matrix(row + 1, 0),
+                 eliminated_matrix(row, 0) - eliminated_matrix(row + 1, 1),
+                 eliminated_matrix(row, 1) - eliminated_matrix(row + 1, 2),
+                 eliminated_matrix(row, 2));
+    gj_matrix[i][1] =
+        Vector4d(-eliminated_matrix(row + 1, 3),
+                 eliminated_matrix(row, 3) - eliminated_matrix(row + 1, 4),
+                 eliminated_matrix(row, 4) - eliminated_matrix(row + 1, 5),
+                 eliminated_matrix(row, 5));
+    gj_matrix[i][2] = VectorXd::Zero(5);
+    gj_matrix[i][2][0] = -eliminated_matrix(row + 1, 6);
+    gj_matrix[i][2][1] =
+        eliminated_matrix(row, 6) - eliminated_matrix(row + 1, 7);
+    gj_matrix[i][2][2] =
+        eliminated_matrix(row, 7) - eliminated_matrix(row + 1, 8);
+    gj_matrix[i][2][3] =
+        eliminated_matrix(row, 8) - eliminated_matrix(row + 1, 9);
+    gj_matrix[i][2][4] = eliminated_matrix(row, 9);
+  }
 
-  // Eq. 24.
-  Matrix<double, 1, 8> p1 = MultiplyPoly(b12, b23) - MultiplyPoly(b13, b22);
-  // Eq. 25.
-  Matrix<double, 1, 8> p2 = MultiplyPoly(b13, b21) - MultiplyPoly(b11, b23);
-  // Eq. 26.
-  Matrix<double, 1, 7> p3 = MultiplyPoly(b11, b22) - MultiplyPoly(b12, b21);
+  const VectorXd cofactor1 =
+      MultiplyPolynomials(gj_matrix[0][1], gj_matrix[1][2]) -
+      MultiplyPolynomials(gj_matrix[0][2], gj_matrix[1][1]);
+  const VectorXd cofactor2 =
+      MultiplyPolynomials(gj_matrix[0][2], gj_matrix[1][0]) -
+      MultiplyPolynomials(gj_matrix[0][0], gj_matrix[1][2]);
+  const VectorXd cofactor3 =
+      MultiplyPolynomials(gj_matrix[0][0], gj_matrix[1][1]) -
+      MultiplyPolynomials(gj_matrix[0][1], gj_matrix[1][0]);
 
-  // Eq. 27. Form determinant of B as a 10th degree polynomial.
-  Matrix<double, 1, 11> n = MultiplyPoly(p1, b31) + MultiplyPoly(p2, b32) +
-                            MultiplyPoly(p3, b33);
+  // Form determinant of B as a 10th degree polynomial in z.
+  const VectorXd determinant_poly =
+      MultiplyPolynomials(cofactor1, gj_matrix[2][0]) +
+      MultiplyPolynomials(cofactor2, gj_matrix[2][1]) +
+      MultiplyPolynomials(cofactor3, gj_matrix[2][2]);
 
   // Step 5. Extract real roots of the 10th degree polynomial.
   Eigen::VectorXd roots;
-  FindRealPolynomialRootsJenkinsTraub(n.transpose().reverse(), &roots);
+  FindRealPolynomialRootsJenkinsTraub(determinant_poly, &roots);
 
   essential_matrices->reserve(roots.size());
   static const double kTolerance = 1e-12;
@@ -323,16 +273,21 @@ bool FivePointRelativePose(const Vector2d image1_points[5],
     if (fabs(roots(i)) < kTolerance)
       continue;
 
-    double x = EvaluatePoly(p1, roots(i)) / EvaluatePoly(p3, roots(i));
-    double y = EvaluatePoly(p2, roots(i)) / EvaluatePoly(p3, roots(i));
+    const double x = EvaluatePolynomial(cofactor1, roots(i)) /
+                     EvaluatePolynomial(cofactor3, roots(i));
+    const double y = EvaluatePolynomial(cofactor2, roots(i)) /
+                     EvaluatePolynomial(cofactor3, roots(i));
+
     Matrix<double, 9, 1> temp_sum =
         x * null_space.col(0) + y * null_space.col(1) +
         roots(i) * null_space.col(2) + null_space.col(3);
     // Need to do it like this because temp_sum is a row vector and recasting
     // it as a 3x3 will load it column-major.
     Matrix3d candidate_essential_mat;
-    candidate_essential_mat << temp_sum.head<3>().transpose(),
-        temp_sum.segment(3, 3).transpose(), temp_sum.tail(3).transpose();
+    candidate_essential_mat <<
+        temp_sum(0), temp_sum(1), temp_sum(2),
+        temp_sum(3), temp_sum(4), temp_sum(5),
+        temp_sum(6), temp_sum(7), temp_sum(8),
     essential_matrices->emplace_back(candidate_essential_mat);
   }
   return (roots.size() > 0);
