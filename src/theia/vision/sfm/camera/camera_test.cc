@@ -79,8 +79,8 @@ TEST(Camera, InternalParameterGettersAndSetters) {
   EXPECT_EQ(camera.FocalLength(), 1.0);
   EXPECT_EQ(camera.AspectRatio(), 1.0);
   EXPECT_EQ(camera.Skew(), 0.0);
-  EXPECT_EQ(camera.PrincipalPointX(), 0.5);
-  EXPECT_EQ(camera.PrincipalPointY(), 0.5);
+  EXPECT_EQ(camera.PrincipalPointX(), 0.0);
+  EXPECT_EQ(camera.PrincipalPointY(), 0.0);
   EXPECT_EQ(camera.RadialDistortion1(), 0.0);
   EXPECT_EQ(camera.RadialDistortion2(), 0.0);
 
