@@ -54,8 +54,9 @@ class InlierSupport : public QualityMeasurement {
     return true;
   }
 
-  // Count the number of inliers in the data;
-  double Calculate(const std::vector<double>& residuals) {
+  // Count the number of inliers in the data and return the cost such that lower
+  // cost is better.
+  double ComputeCost(const std::vector<double>& residuals) {
     double num_inliers = 0.0;
     for (int i = 0; i < residuals.size(); i++) {
       if (residuals[i] < this->error_thresh_) {
@@ -65,12 +66,7 @@ class InlierSupport : public QualityMeasurement {
     const double inlier_ratio =
         num_inliers / static_cast<double>(residuals.size());
     max_inlier_ratio_ = std::max(inlier_ratio, max_inlier_ratio_);
-    return inlier_ratio;
-  }
-
-  // Return true if quality1 > quality2 i.e. there are more inliers in quality1.
-  bool Compare(const double quality1, const double quality2) const {
-    return quality1 > quality2;
+    return residuals.size() - num_inliers;
   }
 
   double GetInlierRatio() const { return max_inlier_ratio_; }

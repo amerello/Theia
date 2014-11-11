@@ -62,7 +62,7 @@ class MLEQualityMeasurement : public QualityMeasurement {
 
   // Given the residuals, assess a quality metric for the data. Returns the
   // quality assessment and outputs a vector of bools indicating the inliers.
-  double Calculate(const std::vector<double>& residuals) {
+  double ComputeCost(const std::vector<double>& residuals) {
     double num_inliers = 0.0;
     double mle_score = 0.0;
     for (int i = 0; i < residuals.size(); i++) {
@@ -77,13 +77,6 @@ class MLEQualityMeasurement : public QualityMeasurement {
         num_inliers / static_cast<double>(residuals.size());
     max_inlier_ratio_ = std::max(inlier_ratio, max_inlier_ratio_);
     return mle_score;
-  }
-
-  // Given two quality measurements, determine which is betters. Note that
-  // larger is not always better! Returns true if quality1 is of higher
-  // quality than quality2.
-  bool Compare(const double quality1, const double quality2) const {
-    return quality1 < quality2;
   }
 
   double GetInlierRatio() const { return max_inlier_ratio_; }

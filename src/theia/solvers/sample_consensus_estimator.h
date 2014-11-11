@@ -58,7 +58,7 @@ struct RansacParameters {
   RansacParameters()
       : error_thresh(-1),
         failure_probability(0.01),
-        min_inlier_ratio(0.1),
+        min_inlier_ratio(0),
         min_iterations(1),
         max_iterations(std::numeric_limits<int>::max()),
         use_mle(false),
@@ -183,7 +183,7 @@ SampleConsensusEstimator<ModelEstimator>::SampleConsensusEstimator(
   CHECK_GT(ransac_params.error_thresh, 0)
       << "Error threshold must be set to greater than zero";
   CHECK_LE(ransac_params.min_inlier_ratio, 1.0);
-  CHECK_GT(ransac_params.min_inlier_ratio, 0.0);
+  CHECK_GE(ransac_params.min_inlier_ratio, 0.0);
   CHECK_LT(ransac_params.failure_probability, 1.0);
   CHECK_GT(ransac_params.failure_probability, 0.0);
   CHECK_GE(ransac_params.max_iterations, ransac_params.min_iterations);
@@ -242,10 +242,20 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
   CHECK_NOTNULL(sampler_.get());
   CHECK_NOTNULL(quality_measurement_.get());
   CHECK_NOTNULL(summary);
+  CHECK_NOTNULL(best_model);
 
-  double best_quality = static_cast<double>(QualityMeasurement::INVALID);
-  int max_iterations = ransac_params_.max_iterations;
   const double log_failure_prob = log(ransac_params_.failure_probability);
+  double best_cost = std::numeric_limits<double>::max();
+  int max_iterations = ransac_params_.max_iterations;
+
+  // Set the max iterations if the inlier ratio is set.
+  if (ransac_params_.min_inlier_ratio > 0) {
+    max_iterations = std::min(
+        ComputeMaxIterations(estimator_.SampleSize(),
+                             ransac_params_.min_inlier_ratio,
+                             log_failure_prob),
+        ransac_params_.max_iterations);
+  }
 
   for (summary->num_iterations = 0;
        summary->num_iterations < max_iterations;
@@ -267,23 +277,26 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
     for (const Model& temp_model : temp_models) {
       std::vector<double> residuals = estimator_.Residuals(data, temp_model);
 
-      // Determine quality of the generated model.
-      double sample_quality =
-          quality_measurement_->Calculate(residuals);
+      // Determine cost of the generated model.
+      double sample_cost = quality_measurement_->ComputeCost(residuals);
 
       // Update best model if error is the best we have seen.
-      if (quality_measurement_->Compare(sample_quality, best_quality) ||
-          best_quality == static_cast<double>(QualityMeasurement::INVALID)) {
-
+      if (sample_cost < best_cost) {
         *best_model = temp_model;
-        best_quality = sample_quality;
+        best_cost = sample_cost;
+
+        const double inlier_ratio = quality_measurement_->GetInlierRatio();
+        if (inlier_ratio <
+            estimator_.SampleSize() / static_cast<double>(data.size())) {
+          continue;
+        }
+
         max_iterations =
             std::min(ComputeMaxIterations(
                          estimator_.SampleSize(),
-                         std::max(quality_measurement_->GetInlierRatio(),
-                                  ransac_params_.min_inlier_ratio),
+                         inlier_ratio,
                          log_failure_prob),
-                     ransac_params_.max_iterations);
+                     max_iterations);
         if (max_iterations < ransac_params_.min_iterations) {
           max_iterations = ransac_params_.min_iterations;
         }
