@@ -57,10 +57,7 @@ void AddNoiseToPoint(const double noise_factor, Vector3d* point) {
 
 // Adds noise to the ray i.e. the projection of the point.
 void AddNoiseToProjection(const double noise_factor, Vector2d* ray) {
-  const double noise_x = (-0.5 + RandDouble(0.0, 1.0)) * 2.0 * noise_factor;
-  const double noise_y = (-0.5 + RandDouble(0.0, 1.0)) * 2.0 * noise_factor;
-
-  *ray = Vector2d(ray->x() + noise_x, ray->y() + noise_y);
+  *ray += noise_factor * Vector2d::Random();
 }
 
 // Basically, transform the point to be at (0, 0, -1), add noise, then reverse

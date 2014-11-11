@@ -59,7 +59,7 @@ struct RansacParameters {
       : error_thresh(-1),
         failure_probability(0.01),
         min_inlier_ratio(0),
-        min_iterations(1),
+        min_iterations(100),
         max_iterations(std::numeric_limits<int>::max()),
         use_mle(false),
         use_Tdd_test(false) {}

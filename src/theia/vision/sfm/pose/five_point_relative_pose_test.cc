@@ -80,10 +80,8 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   if (projection_noise_std_dev) {
     // Adds noise to both of the points.
     for (int i = 0; i < 5; ++i) {
-      AddNoiseToProjection(projection_noise_std_dev,
-                           &view_one_points[i]);
-      AddNoiseToProjection(projection_noise_std_dev,
-                           &view_two_points[i]);
+      AddNoiseToProjection(projection_noise_std_dev, &view_one_points[i]);
+      AddNoiseToProjection(projection_noise_std_dev, &view_two_points[i]);
     }
   }
 
@@ -94,7 +92,6 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   EXPECT_TRUE(FivePointRelativePose(view_one_points,
                                     view_two_points,
                                     &soln_ematrices));
-  CHECK_GT(soln_ematrices.size(), 0);
 
   // Among the returned solutions verify that at least one is close to the
   // expected translation and rotation.
@@ -108,7 +105,6 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
                                        view_two_points[i]),
                 kEpipolarTolerance);
     }
-
     if (test::ArraysEqualUpToScale(9, soln_ematrices[n].data(),
                                    gt_ematrix.data(), ematrix_tolerance)) {
       matched_transform = true;
@@ -192,8 +188,7 @@ TEST(FivePointRelativePose, NoRotation) {
                                  Vector3d(3.0, 1.0, 2.0),
                                  Vector3d(-1.0, 1.0, 2.0),
                                  Vector3d(2.0, 1.0, 3.0)};
-  const Matrix3d soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(0.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
+  const Matrix3d soln_rotation = Matrix3d::Identity();
 
   const Vector3d soln_translation(1.0, 1.0, 1.0);
   const double kNoise = 1.0 / 512.0;

@@ -55,12 +55,11 @@ using Eigen::Vector4d;
 
 namespace {
 
-void NormalizeFeature(const Camera& camera,
-                      Vector2d* feature) {
+void NormalizeFeature(const Camera& camera, Vector2d* feature) {
   feature->y() = (feature->y() - camera.PrincipalPointY()) /
                        (camera.FocalLength() * camera.AspectRatio());
   feature->x() = (feature->x() - camera.Skew() * feature->y() -
-                  camera.PrincipalPointY()) / camera.FocalLength();
+                  camera.PrincipalPointX()) / camera.FocalLength();
 }
 
 }  // namespace

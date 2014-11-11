@@ -43,7 +43,7 @@
 
 #include "theia/math/util.h"
 #include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/vision/sfm/camera/camera.h"
+#include "theia/test/test_utils.h"
 #include "theia/vision/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/vision/sfm/estimators/estimate_relative_pose.h"
 #include "theia/vision/sfm/estimators/relative_pose_estimator.h"
@@ -53,11 +53,26 @@
 
 namespace theia {
 
+using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 static const double kFocalLength = 1000.0;
+static const double kSampsonError = 2.0;
+static const double kErrorThreshold =
+    (kSampsonError * kSampsonError) / (kFocalLength * kFocalLength);
+
+// Generate points in a grid so that they are repeatable.
+void GeneratePoints(std::vector<Vector3d>* points) {
+  for (int i = -1; i <= 1; i++) {
+    for (int j = -1; j <= 1; j++) {
+      for (int k = 4; k <= 6; k++) {
+        points->emplace_back(Vector3d(i, j, k));
+      }
+    }
+  }
+}
 
 void ExecuteRandomTest(const RansacParameters& options,
                        const Matrix3d& rotation,
@@ -65,52 +80,43 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise,
                        const double tolerance) {
-  static const int kNumCorrespondences = 600;
   InitRandomGenerator();
 
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
-  Camera camera1;
-  camera1.SetFocalLength(kFocalLength);
-  Camera camera2;
-  camera2.SetFocalLength(kFocalLength);
-  camera2.SetOrientationFromRotationMatrix(rotation);
-  camera2.SetPosition(position);
+  std::vector<Vector3d> points3d;
+  GeneratePoints(&points3d);
 
+  const Vector3d translation = (-rotation * position).normalized();
   std::vector<FeatureCorrespondence> correspondences;
-  for (int i = 0; i < kNumCorrespondences; i++) {
+  for (int i = 0; i < points3d.size(); i++) {
     FeatureCorrespondence correspondence;
     // Add an inlier or outlier.
-    if (i < inlier_ratio * kNumCorrespondences) {
+    if (i < inlier_ratio * points3d.size()) {
       // Make sure the point is in front of the camera.
-      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 4);
-      camera1.ProjectPoint(point_3d.homogeneous(), &correspondence.feature1);
-      camera2.ProjectPoint(point_3d.homogeneous(), &correspondence.feature2);
-
-      if (noise) {
-        AddNoiseToProjection(noise, &correspondence.feature1);
-        AddNoiseToProjection(noise, &correspondence.feature2);
-      }
+      correspondence.feature1 = points3d[i].hnormalized();
+      correspondence.feature2 =
+          (rotation * points3d[i] + translation).hnormalized();
     } else {
-      correspondence.feature1 = kFocalLength * Vector2d::Random();
-      correspondence.feature2 = kFocalLength * Vector2d::Random();
+      correspondence.feature1 = Vector2d::Random();
+      correspondence.feature2 = Vector2d::Random();
     }
     correspondences.emplace_back(correspondence);
   }
 
-  // Normalize feature points by intrinsics.
-  std::vector<FeatureCorrespondence> normalized_correspondences;
-  NormalizeFeatures(camera1,
-                    camera2,
-                    correspondences,
-                    &normalized_correspondences);
+  if (noise) {
+    for (int i = 0; i < points3d.size(); i++) {
+      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature1);
+      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature2);
+    }
+  }
 
   // Estimate the relative pose.
   RelativePose relative_pose;
   RansacSummary ransac_summary;
   EXPECT_TRUE(EstimateRelativePose(options,
                                    RansacType::RANSAC,
-                                   normalized_correspondences,
+                                   correspondences,
                                    &relative_pose,
                                    &ransac_summary));
 
@@ -118,32 +124,33 @@ void ExecuteRandomTest(const RansacParameters& options,
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 5);
 
   // Expect poses are near.
-  const double rotation_diff_degrees = RadToDeg(
-      Eigen::AngleAxisd(relative_pose.rotation.transpose() * rotation).angle());
-  const double translation_diff_degrees = RadToDeg(std::acos(std::min(
-      1.0, std::max(-1.0, position.normalized().dot(relative_pose.position)))));
-
-  EXPECT_LT(rotation_diff_degrees, tolerance);
-  EXPECT_LT(translation_diff_degrees, tolerance);
+  EXPECT_TRUE(test::ArraysEqualUpToScale(9,
+                                         rotation.data(),
+                                         relative_pose.rotation.data(),
+                                         tolerance));
+  EXPECT_TRUE(test::ArraysEqualUpToScale(3,
+                                         position.data(),
+                                         relative_pose.position.data(),
+                                         tolerance));
 }
 
 TEST(EstimateRelativePose, AllInliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
-  options.max_iterations = 1000;
-  options.error_thresh = 1e-6;
+  options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
   const double kInlierRatio = 1.0;
   const double kNoise = 0.0;
-  const double kPoseTolerance = 1e-2;
+  const double kPoseTolerance = 1e-6;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.3 * Matrix3d::Random())
+    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+        .toRotationMatrix()
   };
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
-
+  const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
+                                            Vector3d(0, 0, 0.5) };
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
       ExecuteRandomTest(options,
@@ -159,19 +166,20 @@ TEST(EstimateRelativePose, AllInliersNoNoise) {
 TEST(EstimateRelativePose, AllInliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
-  options.max_iterations = 1000;
-  options.error_thresh = 1e-6;
+  options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
   const double kInlierRatio = 1.0;
   const double kNoise = 1.0;
-  const double kPoseTolerance = 2.5;
+  const double kPoseTolerance = 1e-2;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.3 * Matrix3d::Random())
+    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+        .toRotationMatrix()
   };
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
+  const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
+                                            Vector3d(0, 0, 0.5) };
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -188,12 +196,11 @@ TEST(EstimateRelativePose, AllInliersWithNoise) {
 TEST(EstimateRelativePose, OutliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
-  options.max_iterations = 1000;
-  options.error_thresh = 1e-6;
+  options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
-  const double kInlierRatio = 0.5;
+  const double kInlierRatio = 0.7;
   const double kNoise = 0.0;
-  const double kPoseTolerance = 1e-4;
+  const double kPoseTolerance = 1e-2;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
@@ -217,12 +224,11 @@ TEST(EstimateRelativePose, OutliersNoNoise) {
 TEST(EstimateRelativePose, OutliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
-  options.max_iterations = 1000;
-  options.error_thresh = 1e-6;
+  options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
-  const double kInlierRatio = 0.5;
+  const double kInlierRatio = 0.7;
   const double kNoise = 1.0;
-  const double kPoseTolerance = 2.5;
+  const double kPoseTolerance = 1e-2;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
