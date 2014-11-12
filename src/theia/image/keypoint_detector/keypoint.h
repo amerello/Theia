@@ -47,8 +47,6 @@ class Keypoint {
   enum KeypointType {
     INVALID = -1,
     OTHER = 0,
-    FAST,
-    HARRIS,
     SIFT,
     AGAST,
     BRISK
