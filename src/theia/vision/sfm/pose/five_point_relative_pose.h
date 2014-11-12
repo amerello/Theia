@@ -41,10 +41,12 @@
 namespace theia {
 
 // Computes the relative pose between two cameras using 5 corresponding
-// points. Algorithm is implemented based on "An Efficient Solution to the
-// Five-Point Relative Pose Problem" by Nister. The relative pose is computed
+// points. Algorithm is implemented based on "H. Stewénius, C. Engels, and
+// D. Nistér. Recent developments on direct relative orientation". ISPRS Journal
+// of Photogrammetry and Remote Sensing, 2006. The relative pose is computed
 // such that y * E * x = 0, where E = t_x * R and t_x is the cross product
-// matrix of t.
+// matrix of t. This implementation is proven to be more stable than the fast 5
+// pt. algorithm by Nister.
 //
 // Params:
 //   image1_points: Location of features on the image plane of image 1.
