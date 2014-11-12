@@ -55,6 +55,14 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
+namespace {
+
+enum TriangulationType {
+  STANDARD = 1,
+  DLT = 2,
+  MIDPOINT = 3
+};
+
 double ReprojectionError(const Matrix3x4d& pose,
                          const Vector4d& world_point,
                          const Vector2d& image_point) {
@@ -64,46 +72,8 @@ double ReprojectionError(const Matrix3x4d& pose,
   return sq_reproj_error;
 }
 
-void TestTriangulationDLTBasic(const Vector3d& point_3d,
-                               const Quaterniond& rel_rotation,
-                               const Vector3d& rel_translation,
-                               const double projection_noise,
-                               const double max_reprojection_error) {
-  InitRandomGenerator();
-
-  const Matrix3x4d pose_left = Matrix3x4d::Identity();
-  Matrix3x4d pose_right;
-  pose_right << rel_rotation.toRotationMatrix(), rel_translation;
-
-  // Reproject point into both image 2, assume image 1 is identity rotation at
-  // the origin.
-  Vector2d image_point_1 =
-      (pose_left * point_3d.homogeneous()).eval().hnormalized();
-  Vector2d image_point_2 =
-      (pose_right * point_3d.homogeneous()).eval().hnormalized();
-
-  // Add projection noise if required.
-  if (projection_noise) {
-    AddNoiseToProjection(projection_noise, &image_point_1);
-    AddNoiseToProjection(projection_noise, &image_point_2);
-  }
-
-  // Triangulate with DLT.
-  Vector4d dlt_triangulated_point;
-  EXPECT_TRUE(
-      TriangulateDLT(pose_left.matrix(), pose_right.matrix(), image_point_1,
-                     image_point_2, &dlt_triangulated_point));
-
-  // Check the reprojection error.
-  EXPECT_LE(
-      ReprojectionError(pose_left, dlt_triangulated_point, image_point_1),
-      max_reprojection_error);
-  EXPECT_LE(
-      ReprojectionError(pose_right, dlt_triangulated_point, image_point_2),
-      max_reprojection_error);
-}
-
-void TestTriangulationBasic(const Vector3d& point_3d,
+void TestTriangulationBasic(const TriangulationType type,
+                            const Vector3d& point_3d,
                             const Quaterniond& rel_rotation,
                             const Vector3d& rel_translation,
                             const double projection_noise,
@@ -130,8 +100,29 @@ void TestTriangulationBasic(const Vector3d& point_3d,
 
   // Triangulate with Optimal.
   Vector4d triangulated_point;
-  EXPECT_TRUE(Triangulate(pose1.matrix(), pose2.matrix(), image_point1,
-                          image_point2, &triangulated_point));
+  if (type == STANDARD) {
+    EXPECT_TRUE(Triangulate(pose1, pose2,
+                            image_point1, image_point2,
+                            &triangulated_point));
+  } else if (type == DLT) {
+    EXPECT_TRUE(
+        TriangulateDLT(pose1, pose2,
+                       image_point1, image_point2,
+                       &triangulated_point));
+  } else if (type == MIDPOINT) {
+    const Matrix3d rotation1 = pose1.block<3, 3>(0, 0);
+    const Vector3d origin1 = -rotation1.transpose() * pose1.col(3);
+    const Vector3d ray1 =
+        (rotation1.transpose() * image_point1.homogeneous()).normalized();
+    const Matrix3d rotation2 = pose2.block<3, 3>(0, 0);
+    const Vector3d origin2 = -rotation2.transpose() * pose2.col(3);
+    const Vector3d ray2 =
+        (rotation2.transpose() * image_point2.homogeneous()).normalized();
+    EXPECT_TRUE(
+        TriangulateMidpoint(origin1, ray1, origin2, ray2, &triangulated_point));
+  } else {
+    LOG(ERROR) << "Incompatible Triangulation type!";
+  }
 
   // Check the reprojection error.
   EXPECT_LE(
@@ -226,7 +217,7 @@ void TestTriangulationManyPoints(const double projection_noise,
   }
 }
 
-TEST(Triangluation, BasicTest) {
+TEST(Triangulation, BasicTest) {
   static const double kProjectionNoise = 0.0;
   static const double kReprojectionTolerance = 1e-12;
 
@@ -242,13 +233,8 @@ TEST(Triangluation, BasicTest) {
 
   // Run the test.
   for (int i = 0; i < 2; i++) {
-    TestTriangulationDLTBasic(points_3d[i],
-                              kRotation,
-                              kTranslation,
-                              kProjectionNoise,
-                              kReprojectionTolerance);
-
-    TestTriangulationBasic(points_3d[i],
+    TestTriangulationBasic(TriangulationType::STANDARD,
+                           points_3d[i],
                            kRotation,
                            kTranslation,
                            kProjectionNoise,
@@ -256,7 +242,7 @@ TEST(Triangluation, BasicTest) {
   }
 }
 
-TEST(Triangluation, NoiseTest) {
+TEST(Triangulation, NoiseTest) {
   static const double kProjectionNoise = 1.0 / 512.0;
   static const double kReprojectionTolerance = 1e-5;
 
@@ -272,13 +258,8 @@ TEST(Triangluation, NoiseTest) {
 
   // Run the test.
   for (int i = 0; i < 2; i++) {
-    TestTriangulationDLTBasic(points_3d[i],
-                              kRotation,
-                              kTranslation,
-                              kProjectionNoise,
-                              kReprojectionTolerance);
-
-    TestTriangulationBasic(points_3d[i],
+    TestTriangulationBasic(TriangulationType::STANDARD,
+                           points_3d[i],
                            kRotation,
                            kTranslation,
                            kProjectionNoise,
@@ -286,7 +267,170 @@ TEST(Triangluation, NoiseTest) {
   }
 }
 
-TEST(TriangluationNView, BasicTest) {
+BENCHMARK(Triangulation, Benchmark, 100, 1000) {
+  const Vector3d point_3d = Vector3d(5.0, 20.0, 23.0);
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+  Matrix3x4d pose1;
+  pose1 <<
+      kRotation.toRotationMatrix(), kTranslation.normalized();
+  const Matrix3x4d pose2 = Matrix3x4d::Identity();
+
+  // Reproject point into both image 2, assume image 1 is identity rotation at
+  // the origin.
+  Vector2d image_point1 =
+      (pose1 * point_3d.homogeneous()).eval().hnormalized();
+  Vector2d image_point2 =
+      (pose2 * point_3d.homogeneous()).eval().hnormalized();
+
+  // Triangulate with Optimal.
+  Vector4d triangulated_point;
+  Triangulate(pose1, pose2, image_point1, image_point2, &triangulated_point);
+}
+
+BENCHMARK(TriangulationDLT, Benchmark, 100, 1000) {
+  const Vector3d point_3d = Vector3d(5.0, 20.0, 23.0);
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+  Matrix3x4d pose1;
+  pose1 <<
+      kRotation.toRotationMatrix(), kTranslation.normalized();
+  const Matrix3x4d pose2 = Matrix3x4d::Identity();
+
+  // Reproject point into both image 2, assume image 1 is identity rotation at
+  // the origin.
+  Vector2d image_point1 =
+      (pose1 * point_3d.homogeneous()).eval().hnormalized();
+  Vector2d image_point2 =
+      (pose2 * point_3d.homogeneous()).eval().hnormalized();
+
+  // Triangulate with Optimal.
+  Vector4d triangulated_point;
+  TriangulateDLT(pose1, pose2, image_point1, image_point2, &triangulated_point);
+}
+
+BENCHMARK(TriangulationMidpoint, Benchmark, 100, 1000) {
+  const Vector3d point_3d = Vector3d(5.0, 20.0, 23.0);
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+  const Vector3d kTranslation = Vector3d(-3.0, 1.5, 11.0).normalized();
+
+  // Reproject point into both image 2, assume image 1 is identity rotation at
+  // the origin.
+  const Vector2d image_point1 =
+      (kRotation * point_3d + kTranslation).eval().hnormalized();
+
+  // Triangulate with Optimal.
+  Vector4d triangulated_point;
+  const Vector3d origin1 = kRotation.inverse() * -kTranslation;
+  const Vector3d ray1 =
+      (kRotation.inverse() * image_point1.homogeneous()).normalized();
+  const Vector3d origin2 = Vector3d::Zero();
+  const Vector3d ray2 = point_3d.normalized();
+  EXPECT_TRUE(
+      TriangulateMidpoint(origin1, ray1, origin2, ray2, &triangulated_point));
+}
+
+TEST(TriangulationDLT, BasicTest) {
+  static const double kProjectionNoise = 0.0;
+  static const double kReprojectionTolerance = 1e-12;
+
+  // Set up model points.
+  const Vector3d points_3d[2] = { Vector3d(5.0, 20.0, 23.0),
+                                  Vector3d(-6.0, 16.0, 33.0) };
+
+  // Set up rotations.
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+
+  // Set up translations.
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+
+  // Run the test.
+  for (int i = 0; i < 2; i++) {
+    TestTriangulationBasic(TriangulationType::DLT,
+                           points_3d[i],
+                           kRotation,
+                           kTranslation,
+                           kProjectionNoise,
+                           kReprojectionTolerance);
+  }
+}
+
+TEST(TriangulationDLT, NoiseTest) {
+  static const double kProjectionNoise = 1.0 / 512.0;
+  static const double kReprojectionTolerance = 1e-5;
+
+  // Set up model points.
+  const Vector3d points_3d[2] = { Vector3d(5.0, 20.0, 23.0),
+                                  Vector3d(-6.0, 16.0, 33.0) };
+
+  // Set up rotations.
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+
+  // Set up translations.
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+
+  // Run the test.
+  for (int i = 0; i < 2; i++) {
+    TestTriangulationBasic(TriangulationType::DLT,
+                           points_3d[i],
+                           kRotation,
+                           kTranslation,
+                           kProjectionNoise,
+                           kReprojectionTolerance);
+  }
+}
+
+TEST(TriangulationMidpoint, BasicTest) {
+  static const double kProjectionNoise = 0.0;
+  static const double kReprojectionTolerance = 1e-12;
+
+  // Set up model points.
+  const Vector3d points_3d[2] = { Vector3d(5.0, 20.0, 23.0),
+                                  Vector3d(-6.0, 16.0, 33.0) };
+
+  // Set up rotations.
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+
+  // Set up translations.
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+
+  // Run the test.
+  for (int i = 0; i < 2; i++) {
+    TestTriangulationBasic(TriangulationType::MIDPOINT,
+                           points_3d[i],
+                           kRotation,
+                           kTranslation,
+                           kProjectionNoise,
+                           kReprojectionTolerance);
+  }
+}
+
+TEST(TriangulationMidpoint, NoiseTest) {
+  static const double kProjectionNoise = 1.0 / 512.0;
+  static const double kReprojectionTolerance = 1e-5;
+
+  // Set up model points.
+  const Vector3d points_3d[2] = { Vector3d(5.0, 20.0, 23.0),
+                                  Vector3d(-6.0, 16.0, 33.0) };
+
+  // Set up rotations.
+  const Quaterniond kRotation(Eigen::AngleAxisd(0.15, Vector3d(0.0, 1.0, 0.0)));
+
+  // Set up translations.
+  const Vector3d kTranslation(-3.0, 1.5, 11.0);
+
+  // Run the test.
+  for (int i = 0; i < 2; i++) {
+    TestTriangulationBasic(TriangulationType::MIDPOINT,
+                           points_3d[i],
+                           kRotation,
+                           kTranslation,
+                           kProjectionNoise,
+                           kReprojectionTolerance);
+  }
+}
+
+TEST(TriangulationNView, BasicTest) {
   static const double kProjectionNoise = 0.0;
   static const double kReprojectionTolerance = 1e-12;
 
@@ -294,7 +438,7 @@ TEST(TriangluationNView, BasicTest) {
   TestTriangulationManyPoints(kProjectionNoise, kReprojectionTolerance);
 }
 
-TEST(TriangluationNView, NoiseTest) {
+TEST(TriangulationNView, NoiseTest) {
   static const double kProjectionNoise = 1.0 / 512.0;
   static const double kReprojectionTolerance = 5e-4;
 
@@ -348,4 +492,5 @@ TEST(IsTriangulatedPointInFrontOfCameras, OneInFrontOneBehind) {
   TestIsTriangulatedPointInFrontOfCameras(point, rotation, position, false);
 }
 
+}  // namespace
 }  // namespace theia

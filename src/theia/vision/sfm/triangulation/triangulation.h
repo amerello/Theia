@@ -49,25 +49,33 @@ struct FeatureCorrespondence;
 // two view reconstructions where only an essential matrix or fundamental matrix
 // is available you can use ProjectionMatricesFromFundamentalMatrix in
 // theia/vision/sfm/pose/fundamental_matrix_utils.h
-bool Triangulate(const Matrix3x4d& pose_left,
-                 const Matrix3x4d& pose_right,
-                 const Eigen::Vector2d& point_left,
-                 const Eigen::Vector2d& point_right,
+bool Triangulate(const Matrix3x4d& pose1,
+                 const Matrix3x4d& pose2,
+                 const Eigen::Vector2d& point1,
+                 const Eigen::Vector2d& point2,
                  Eigen::Vector4d* triangulated_point);
+
+// Triangulates a 3D point by determining the closest point between the two
+// rays. This method is known to be suboptimal in terms of reprojection error
+// but it is extremely fast. We assume that the directions are unit vectors.
+bool TriangulateMidpoint(const Eigen::Vector3d& origin1,
+                         const Eigen::Vector3d& ray_direction1,
+                         const Eigen::Vector3d& origin2,
+                         const Eigen::Vector3d& ray_direction2,
+                         Eigen::Vector4d* triangulated_point);
 
 // Triangulates 2 posed views using the DLT method from HZZ 12.2 p 312. The
 // inputs are the projection matrices and the image observations. Returns true
-// on success and false on failure (e.g., if the point is at infinity).
-bool TriangulateDLT(const Matrix3x4d& pose_left,
-                    const Matrix3x4d& pose_right,
-                    const Eigen::Vector2d& point_left,
-                    const Eigen::Vector2d& point_right,
+// on success and false on failure.
+bool TriangulateDLT(const Matrix3x4d& pose1,
+                    const Matrix3x4d& pose2,
+                    const Eigen::Vector2d& point1,
+                    const Eigen::Vector2d& point2,
                     Eigen::Vector4d* triangulated_point);
 
 // Computes n-view triangulation by computing the SVD that wil approximately
 // minimize reprojection error. The inputs are the projection matrices and the
-// image observations. Returns true on success and false on failure (e.g.,
-// if the point is at infinity).
+// image observations. Returns true on success and false on failure.
 bool TriangulateNViewSVD(
     const std::vector<Matrix3x4d>& poses,
     const std::vector<Eigen::Vector2d>& points,
@@ -77,8 +85,7 @@ bool TriangulateNViewSVD(
 // algebraic error. This minimization is independent of the number of points, so
 // it is extremely scalable. It gives better reprojection errors in the results
 // and is significantly faster. The inputs are the projection matrices and the
-// image observations. Returns true on success and false on failure (e.g., if
-// the point is at infinity).
+// image observations. Returns true on success and false on failure.
 bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
                       const std::vector<Eigen::Vector2d>& points,
                       Eigen::Vector4d* triangulated_point);

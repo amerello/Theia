@@ -57,16 +57,16 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 
 // Given either a fundamental or essential matrix and two corresponding images
-// points such that ematrix * point_right produces a line in the left image,
+// points such that ematrix * point2 produces a line in the first image,
 // this method finds corrected image points such that
-// corrected_point_left^t * ematrix * corrected_point_right = 0.
+// corrected_point1^t * ematrix * corrected_point2 = 0.
 void FindOptimalImagePoints(const Matrix3d& ematrix,
-                            const Vector2d& point_left,
-                            const Vector2d& point_right,
-                            Vector2d* corrected_point_left,
-                            Vector2d* corrected_point_right) {
-  const Vector3d point1 = point_left.homogeneous();
-  const Vector3d point2 = point_right.homogeneous();
+                            const Vector2d& point1,
+                            const Vector2d& point2,
+                            Vector2d* corrected_point1,
+                            Vector2d* corrected_point2) {
+  const Vector3d point1_homog = point1.homogeneous();
+  const Vector3d point2_homog = point2.homogeneous();
 
   // A helper matrix to isolate certain coordinates.
   Matrix<double, 2, 3> s_matrix;
@@ -77,13 +77,13 @@ void FindOptimalImagePoints(const Matrix3d& ematrix,
   const Eigen::Matrix2d e_submatrix = ematrix.topLeftCorner<2, 2>();
 
   // The epipolar line from one image point in the other image.
-  Vector2d epipolar_line1 = s_matrix * ematrix * point2;
-  Vector2d epipolar_line2 = s_matrix * ematrix.transpose() * point1;
+  Vector2d epipolar_line1 = s_matrix * ematrix * point2_homog;
+  Vector2d epipolar_line2 = s_matrix * ematrix.transpose() * point1_homog;
 
   const double a = epipolar_line1.transpose() * e_submatrix * epipolar_line2;
   const double b =
       (epipolar_line1.squaredNorm() + epipolar_line2.squaredNorm()) / 2.0;
-  const double c = point1.transpose() * ematrix * point2;
+  const double c = point1_homog.transpose() * ematrix * point2_homog;
 
   const double d = sqrt(b * b - a * c);
 
@@ -94,10 +94,10 @@ void FindOptimalImagePoints(const Matrix3d& ematrix,
   lambda *=
       (2.0 * d) / (epipolar_line1.squaredNorm() + epipolar_line2.squaredNorm());
 
-  *corrected_point_left =
-      (point1 - s_matrix.transpose() * lambda * epipolar_line1).hnormalized();
-  *corrected_point_right =
-      (point2 - s_matrix.transpose() * lambda * epipolar_line2).hnormalized();
+  *corrected_point1 = (point1_homog - s_matrix.transpose() * lambda *
+                                          epipolar_line1).hnormalized();
+  *corrected_point2 = (point2_homog - s_matrix.transpose() * lambda *
+                                          epipolar_line2).hnormalized();
 }
 
 }  // namespace
@@ -105,43 +105,76 @@ void FindOptimalImagePoints(const Matrix3d& ematrix,
 // Triangulates 2 posed views
 bool Triangulate(const Matrix3x4d& pose1,
                  const Matrix3x4d& pose2,
-                 const Vector2d& point_left,
-                 const Vector2d& point_right,
+                 const Vector2d& point1,
+                 const Vector2d& point2,
                  Vector4d* triangulated_point) {
   Matrix3d fmatrix;
   FundamentalMatrixFromProjectionMatrices(pose1.data(),
                                           pose2.data(),
                                           fmatrix.data());
 
-  Vector2d corrected_point_left, corrected_point_right;
-  FindOptimalImagePoints(fmatrix, point_left, point_right,
-                         &corrected_point_left, &corrected_point_right);
+  Vector2d corrected_point1, corrected_point2;
+  FindOptimalImagePoints(fmatrix, point1, point2,
+                         &corrected_point1, &corrected_point2);
 
   // Now the two points are guaranteed to intersect. We can use the DLT method
   // since it is easy to construct.
   return TriangulateDLT(pose1 ,
                         pose2,
-                        corrected_point_left,
-                        corrected_point_right,
+                        corrected_point1,
+                        corrected_point2,
                         triangulated_point);
 }
 
+// Triangulates a 3D point by determining the closest point between the two
+// rays. This method is known to be suboptimal in terms of reprojection error
+// but it is extremely fast.
+bool TriangulateMidpoint(const Vector3d& ray_origin1,
+                         const Vector3d& ray_direction1,
+                         const Vector3d& ray_origin2,
+                         const Vector3d& ray_direction2,
+                         Eigen::Vector4d* triangulated_point) {
+  const double dir1_dot_dir2 = ray_direction1.dot(ray_direction2);
+  const double dir1_dot_pos = ray_direction1.dot(ray_origin2 - ray_origin1);
+  const double dir2_dot_pos = ray_direction2.dot(ray_origin2 - ray_origin1);
+  const double scale_part =  1.0 - dir1_dot_dir2 * dir1_dot_dir2;
+
+  const Vector3d scaled_dir1 =
+      (dir1_dot_pos - dir1_dot_dir2 * dir2_dot_pos) * ray_direction1;
+  const Vector3d scaled_dir2 =
+      (dir1_dot_pos * dir1_dot_dir2 - dir2_dot_pos) * ray_direction2;
+
+  // The point is at infinity if the scale division == 0.
+  if (scale_part == 0) {
+    triangulated_point->head<3>() =
+        (ray_origin1 + scaled_dir1 + ray_origin2 + scaled_dir2) / 2.0;
+    (*triangulated_point)[3] = 0;
+    return true;
+  }
+
+  triangulated_point->head<3>() =
+      (ray_origin1 + scaled_dir1 / scale_part +
+       ray_origin2 + scaled_dir2 / scale_part) / 2.0;
+  (*triangulated_point)[3] = 1;
+  return true;
+}
+
 // Triangulates 2 posed views
-bool TriangulateDLT(const Matrix3x4d& pose_left,
-                    const Matrix3x4d& pose_right,
-                    const Vector2d& point_left,
-                    const Vector2d& point_right,
+bool TriangulateDLT(const Matrix3x4d& pose1,
+                    const Matrix3x4d& pose2,
+                    const Vector2d& point1,
+                    const Vector2d& point2,
                     Vector4d* triangulated_point) {
   Matrix4d design_matrix;
-  design_matrix.row(0) = point_left[0] * pose_left.row(2) - pose_left.row(0);
-  design_matrix.row(1) = point_left[1] * pose_left.row(2) - pose_left.row(1);
-  design_matrix.row(2) = point_right[0] * pose_right.row(2) - pose_right.row(0);
-  design_matrix.row(3) = point_right[1] * pose_right.row(2) - pose_right.row(1);
+  design_matrix.row(0) = point1[0] * pose1.row(2) - pose1.row(0);
+  design_matrix.row(1) = point1[1] * pose1.row(2) - pose1.row(1);
+  design_matrix.row(2) = point2[0] * pose2.row(2) - pose2.row(0);
+  design_matrix.row(3) = point2[1] * pose2.row(2) - pose2.row(1);
 
   // Extract nullspace.
   *triangulated_point =
       design_matrix.jacobiSvd(Eigen::ComputeFullV).matrixV().rightCols<1>();
-  return (*triangulated_point)[3] != 0;
+  return true;
 }
 
 // Triangulates N views by computing SVD that minimizes the error.
@@ -161,7 +194,7 @@ bool TriangulateNViewSVD(const std::vector<Matrix3x4d>& poses,
   *triangulated_point =
       (design_matrix.transpose() * design_matrix).jacobiSvd(Eigen::ComputeFullV)
           .matrixV().rightCols<1>().head(4);
-  return (*triangulated_point)[3] != 0;;
+  return true;
 }
 
 bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
@@ -180,7 +213,7 @@ bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
 
   Eigen::SelfAdjointEigenSolver<Matrix4d> eigen_solver(design_matrix);
   *triangulated_point = eigen_solver.eigenvectors().col(0);
-  return (*triangulated_point)[3] != 0;
+  return true;
 }
 
 bool IsTriangulatedPointInFrontOfCameras(
