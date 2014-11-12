@@ -214,22 +214,28 @@ int SampleConsensusEstimator<ModelEstimator>::ComputeMaxIterations(
     const double inlier_ratio,
     const double log_failure_prob) const {
   CHECK_GT(inlier_ratio, 0.0);
-
-  int num_iterations = 1;
-  if (inlier_ratio < 1.0) {
-    double num_samples = min_sample_size;
-    if (ransac_params_.use_Tdd_test) {
-      // If we use the T_{1,1} test, we have to adapt the number of samples
-      // that needs to be generated accordingly since we use another
-      // match for verification and a correct match is selected with probability
-      // inlier_ratio.
-      num_samples += 1.0;
-    }
-    double log_prob = log(1.0 - pow(inlier_ratio, num_samples));
-    num_iterations = static_cast<int>(std::floor(
-        log_failure_prob / log_prob) + 1.0);
+  if (inlier_ratio == 1.0) {
+    return ransac_params_.min_iterations;
   }
-  return std::min(num_iterations, ransac_params_.max_iterations);
+
+  // If we use the T_{1,1} test, we have to adapt the number of samples
+  // that needs to be generated accordingly since we use another
+  // match for verification and a correct match is selected with probability
+  // inlier_ratio.
+  const double num_samples =
+      ransac_params_.use_Tdd_test ? min_sample_size : min_sample_size + 1;
+
+  const double log_prob = log(1.0 - pow(inlier_ratio, num_samples));
+
+  // NOTE: For very low inlier ratios the number of iterations can actually
+  // exceed the maximum value for an int. We need to keep this variable as a
+  // double until we do the check below against the minimum and maximum number
+  // of iterations in the parameter settings.
+  const double num_iterations = log_failure_prob / log_prob;
+
+  return std::max(static_cast<double>(ransac_params_.min_iterations),
+                  std::min(num_iterations,
+                           static_cast<double>(ransac_params_.max_iterations)));
 }
 
 template <class ModelEstimator>
@@ -291,15 +297,15 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
           continue;
         }
 
-        max_iterations =
-            std::min(ComputeMaxIterations(
-                         estimator_.SampleSize(),
-                         inlier_ratio,
-                         log_failure_prob),
-                     max_iterations);
-        if (max_iterations < ransac_params_.min_iterations) {
-          max_iterations = ransac_params_.min_iterations;
-        }
+        // A better cost does not guarantee a higher inlier ratio (i.e, the MLE
+        // case) so we only update the max iterations if the number decreases.
+        max_iterations = std::min(ComputeMaxIterations(estimator_.SampleSize(),
+                                                       inlier_ratio,
+                                                       log_failure_prob),
+                                  max_iterations);
+
+        VLOG(2) << "Inlier ratio = " << inlier_ratio
+                << " and max number of iterations = " << max_iterations;
       }
     }
   }
