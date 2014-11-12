@@ -89,6 +89,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Math</a><ul>
@@ -99,10 +101,11 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model"><tt class="docutils literal"><span class="pre">Model</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph"><tt class="docutils literal"><span class="pre">ViewGraph</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera"><tt class="docutils literal"><span class="pre">Camera</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -195,19 +198,49 @@ int <tt class="descname">SolveQuartic</tt><big>(</big>double <em>a</em>, double 
 </div>
 <div class="section" id="generic-polynomial-solver">
 <span id="section-generic-poly"></span><h2>Generic Polynomial Solver<a class="headerlink" href="#generic-polynomial-solver" title="Permalink to this headline">¶</a></h2>
-<p>For polynomials of degree &gt; 4 there are no easy closed-form solutions, making the problem of finding roots much more difficult. However, we have implemented a function that will solve for all roots of a polynomial by constructing a companion matrix and solving with an eigenvalue decomposition.</p>
+<p>For polynomials of degree &gt; 4 there are no easy closed-form solutions, making
+the problem of finding roots much more difficult. However, we have implemented
+several functions that will solve for polynomial roots. For all polynomials we
+require that the largest degree appears first and the smallest degree appears
+last in the input VectorXd.</p>
 <dl class="function">
-<dt id="GetPolynomialRoots__Eigen::VectorXdCR">
-std::vector&lt;std::complex&lt;double&gt;&gt; <tt class="descname">GetPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>coeffs</em><big>)</big><a class="headerlink" href="#GetPolynomialRoots__Eigen::VectorXdCR" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="FindPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP.Eigen::VectorXdP">
+bool <tt class="descname">FindPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>polynomial</em>, Eigen::VectorXd* <em>real</em>, Eigen::VectorXd* <em>imaginary</em><big>)</big><a class="headerlink" href="#FindPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Roots are computed using the Companion Matrix with balancing to help improve
+the condition of the matrix system we solve. This is a reliable, stable method
+for computing roots but is most often the slowest method.</p>
+</dd></dl>
 
 <dl class="function">
-<dt id="GetRealPolynomialRoots__Eigen::VectorXdCR">
-std::vector&lt;double&gt; <tt class="descname">GetRealPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>coeffs</em><big>)</big><a class="headerlink" href="#GetRealPolynomialRoots__Eigen::VectorXdCR" title="Permalink to this definition">¶</a></dt>
-<dd><p>These methods take in polynomial coefficients such that the highest degree
-coefficient is the first element, and the lowest degree coefficient
-(correspondening to degree 0) is the last element. Real or complex roots are
-returned depending on the method called.</p>
+<dt id="FindRealPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP">
+bool <tt class="descname">FindRealPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>polynomial</em>, Eigen::VectorXd* <em>real</em><big>)</big><a class="headerlink" href="#FindRealPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using the Companion Matrix method above, we return only the real roots of the polynomial.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="FindRealPolynomialRootsSturm__Eigen::VectorXdCR.Eigen::VectorXdP">
+bool <tt class="descname">FindRealPolynomialRootsSturm</tt><big>(</big>const Eigen::VectorXd&amp; <em>coeffs</em>, Eigen::VectorXd* <em>real_roots</em><big>)</big><a class="headerlink" href="#FindRealPolynomialRootsSturm__Eigen::VectorXdCR.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Real roots are bracketed within a boundary by analyzing Sturm sequences. Once
+a root has been isolated to a bound, an iterative solver is used to determine
+the actual root.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="FindRealPolynomialRootsJenkinsTraub__Eigen::VectorXdCR.Eigen::VectorXdP">
+bool <tt class="descname">FindRealPolynomialRootsJenkinsTraub</tt><big>(</big>const Eigen::VectorXd&amp; <em>coeffs</em>, Eigen::VectorXd* <em>real_roots</em><big>)</big><a class="headerlink" href="#FindRealPolynomialRootsJenkinsTraub__Eigen::VectorXdCR.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Jenkins-Traub method is a fast globally convergent iterative method for
+finding roots of polynomials with real coefficients. It was designed for
+machine precision and is robust to most polynomial types. One known case where
+is struggles is for sparse polynomials e.g., <span class="math">\(x^n + 1 = 0\)</span> where n is very
+large. This is the recommended method for iteratively computing polynomial
+roots.</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">double FindRealRootIterative(const Eigen::VectorXd&amp; polynomial, const double x0, const double epsilon, const int max_iter);</tt></dt>
+<dd><p>Finds a single polynomials root iteratively based on the starting position <span class="math">\(x_0\)</span> and
+guaranteed precision of epsilon.</p>
 </dd></dl>
 
 </div>

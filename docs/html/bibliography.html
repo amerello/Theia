@@ -68,12 +68,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint"><tt class="docutils literal"><span class="pre">Keypoint</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypointdetector"><tt class="docutils literal"><span class="pre">KeypointDetector</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor"><tt class="docutils literal"><span class="pre">DescriptorExtractor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -89,6 +90,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -99,10 +102,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views">Views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -169,6 +175,14 @@ P4P Problem for Camera with Unknown Focal Length</strong>. <em>Computer Vision a
 Recognition</em>, 2008. IEEE Conference on.</td></tr>
 </tbody>
 </table>
+<table class="docutils citation" frame="void" id="cheng" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Cheng]</td><td>Cheng, J. and Leng, C. and Wu, J. and Cui, H. <strong>Hanqing LuFast and
+Accurate Image Matching with Cascade Hashing for 3D Reconstruction</strong>. <em>Computer
+Vision and Pattern Recognition (CVPR)</em>, 2014.</td></tr>
+</tbody>
+</table>
 <table class="docutils citation" frame="void" id="chum" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -184,6 +198,14 @@ Volume 01 (CVPR &#8216;05), Vol. 1. IEEE Computer Society, Washington, DC, USA,
 <tbody valign="top">
 <tr><td class="label">[ChumRandomizedRansac]</td><td>Chum, O. and Matas, J. <strong>Randomized RANSAC and T(d,d)
 test</strong>, <em>BMVC</em> 2002</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="brief" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[BRIEF]</td><td>Calonder, M. and Lepetit, V. and, Strecha, C. and Fua, P. <strong>BRIEF:
+Binary Robust Independent Elementary Features</strong>, <em>11th European Conference
+on Computer Vision (ECCV)</em>, September 2010</td></tr>
 </tbody>
 </table>
 <table class="docutils citation" frame="void" id="fischler" rules="none">
@@ -294,12 +316,28 @@ Estimation via Residual Consensus</strong>. <em>International Conference on Comp
 Vision (ICCV)</em>, 2011.</td></tr>
 </tbody>
 </table>
+<table class="docutils citation" frame="void" id="stewenius5pt" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Stewenius5pt]</td><td>H. Stewénius, C. Engels, D. Nistér. <strong>Recent developments on
+direct relative orientation</strong>. <em>ISPRS Journal of Photogrammetry and Remote
+Sensing</em>, 2006</td></tr>
+</tbody>
+</table>
 <table class="docutils citation" frame="void" id="sweeneygdls" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label">[SweeneyGDLS]</td><td>C. Sweeney, V. Fragoso, T. Hollerer, M. Turk. <strong>gDLS: A
 Scalable Solution to the Generalized Pose and Scale Problem</strong>. <em>European
 Conference on Computer Vision (ECCV)</em>, 2014</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="sweeneyqep" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[SweeneyQEP]</td><td>C. Sweeney, J. Flynn, M. Turk. <strong>Solving for Relative Pose with a
+Partially Known Rotation is a Quadratic Eigenvalue Problem</strong>. <em>International
+Conference on 3D Vision (3DV)</em>, 2014</td></tr>
 </tbody>
 </table>
 <table class="docutils citation" frame="void" id="torr" rules="none">

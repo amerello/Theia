@@ -68,12 +68,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint"><tt class="docutils literal"><span class="pre">Keypoint</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypointdetector"><tt class="docutils literal"><span class="pre">KeypointDetector</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor"><tt class="docutils literal"><span class="pre">DescriptorExtractor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -89,6 +90,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -99,10 +102,14 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#views">Views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#viewgraph">ViewGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bundle-adjustment">Bundle Adjustment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -153,251 +160,176 @@
             
   <div class="section" id="structure-from-motion-sfm">
 <span id="documentation-sfm"></span><h1>Structure from Motion (SfM)<a class="headerlink" href="#structure-from-motion-sfm" title="Permalink to this headline">¶</a></h1>
-<p>Theia has implementations of many common Structure from Motion (sfm) algorithms. We
-attempt to use a generic interface whenever possible so as to maximize
-compatibility with other libraries.</p>
-<div class="section" id="projection-matrix">
-<h2>Projection Matrix<a class="headerlink" href="#projection-matrix" title="Permalink to this headline">¶</a></h2>
-<p>We provide two convenience matrices that are commonly used in multiview geometry. The first is a <tt class="xref cpp cpp-class docutils literal"><span class="pre">TransformationMatrix</span></tt> which is an affine transformation matrix composed of rotation and translation of the form: <span class="math">\(\left[R | t\right]\)</span>, i.e., the extrinsic parameters of a camera. The <tt class="xref cpp cpp-class docutils literal"><span class="pre">TransformationMatrix</span></tt> is merely a typedef of the Eigen affine transformation matrix. Similarly, a <tt class="xref cpp cpp-class docutils literal"><span class="pre">ProjectionMatrix</span></tt> class is defined that representsthe intrinsic and extrinsic parameters, nameley matrices of the form: <span class="math">\(K\left[R | t \right]\)</span> where <span class="math">\(K\)</span> is a 3x3 matrix of the camera intrinsics (e.g., focal length, principle point, and radial distortion). The <tt class="xref cpp cpp-class docutils literal"><span class="pre">ProjectionMatrix</span></tt> is merely a typedef of an Eigen 3x4 matrix.</p>
+<p>Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
+overall pipeline consists of several steps. First, we extract features (SIFT is
+the default). Then, we perform two-view matching and geometric verification to
+obtain relative poses between image pairs and create a <a class="reference internal" href="#ViewGraph" title="ViewGraph"><tt class="xref cpp cpp-class docutils literal"><span class="pre">ViewGraph</span></tt></a>. Next,
+we perform global pose estimation with &#8220;one-shot&#8221; SfM. One-shot SfM is different
+from incremental SfM in that it considers the entire view graph at the same time
+instead of successfully adding more and more images to the
+<a class="reference internal" href="#Model" title="Model"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Model</span></tt></a>. One-shot SfM methods have been proven to be very fast with
+comparble or better accuracy to incremental SfM approaches, and they are much
+more easily parallelized. After we have obtained camera poses, we perform
+triangulation and <tt class="xref cpp cpp-class docutils literal"><span class="pre">BundleAdjustment</span></tt> to obtain a valid 3D reconstruction
+consisting of cameras and 3D points.</p>
+<p>Extracting and matching <a class="reference internal" href="features.html#documentation-features"><em>Features</em></a> has been covered already, so we
+will now discuss how to go from feature matches to a <a class="reference internal" href="#ViewGraph" title="ViewGraph"><tt class="xref cpp cpp-class docutils literal"><span class="pre">ViewGraph</span></tt></a>. First,
+however, we must present the basic building blocks for our SfM pipeline.</p>
+<div class="section" id="views">
+<h2>Views<a class="headerlink" href="#views" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="View">
+<em class="property">class </em><tt class="descname">View</tt><a class="headerlink" href="#View" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>At the heart of our SfM framework is the <a class="reference internal" href="#View" title="View"><tt class="xref cpp cpp-class docutils literal"><span class="pre">View</span></tt></a> class which represents
+everything about an image that we want to reconstruct. It contains information
+about features from the image, camera pose information, and metadata information
+(including the image name and EXIF data). Views make up our basic visiblity
+constraints and are a fundamental part of the SfM pipeline.</p>
 </div>
-<div class="section" id="camera-and-camerapose">
-<h2>Camera and CameraPose<a class="headerlink" href="#camera-and-camerapose" title="Permalink to this headline">¶</a></h2>
-<p>At the core of SfM are cameras which provide us with observations of 3D points. Theia uses a <tt class="xref cpp cpp-class docutils literal"><span class="pre">Camera</span></tt> struct to maintain all imaging and view information. This includes information about the image captured, the feature positions (both in the image planes and in 3D space), and feature descriptors.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">struct</span> <span class="n">Camera</span> <span class="p">{</span>
-  <span class="n">EIGEN_MAKE_ALIGNED_OPERATOR_NEW</span>
-  <span class="n">Camera</span><span class="p">()</span> <span class="p">{}</span>
-  <span class="k">explicit</span> <span class="n">Camera</span><span class="p">(</span><span class="k">const</span> <span class="n">CameraPose</span><span class="o">&amp;</span> <span class="n">pose</span><span class="p">)</span> <span class="o">:</span> <span class="n">pose_</span><span class="p">(</span><span class="n">pose</span><span class="p">)</span> <span class="p">{}</span>
+<div class="section" id="tracks">
+<h2>Tracks<a class="headerlink" href="#tracks" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Track">
+<em class="property">class </em><tt class="descname">Track</tt><a class="headerlink" href="#Track" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
-  <span class="c1">// The camera pose describing the position, orientation, and intrinsics of the</span>
-  <span class="c1">// camera.</span>
-  <span class="n">CameraPose</span> <span class="n">pose_</span><span class="p">;</span>
+<p>A <a class="reference internal" href="#Track" title="Track"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Track</span></tt></a> represents a feature that has been matached over potentially
+many images. When a feature appears in multiple images it typically means that
+the features correspond to the same 3D point. These 3D points are useful
+constraints in SfM model, as they represent the &#8220;structure&#8221; in
+&#8220;Structure-from-Motion&#8221; and help to build a point cloud for our model.</p>
+</div>
+<div class="section" id="viewgraph">
+<h2>ViewGraph<a class="headerlink" href="#viewgraph" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ViewGraph">
+<em class="property">class </em><tt class="descname">ViewGraph</tt><a class="headerlink" href="#ViewGraph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
-  <span class="c1">// Width of the camera in pixels.</span>
-  <span class="kt">int</span> <span class="n">width_</span><span class="p">;</span>
-  <span class="c1">// Height of the camera in pixels.</span>
-  <span class="kt">int</span> <span class="n">height_</span><span class="p">;</span>
+<p>A <a class="reference internal" href="#ViewGraph" title="ViewGraph"><tt class="xref cpp cpp-class docutils literal"><span class="pre">ViewGraph</span></tt></a> is a basic SfM construct that is created from two-view
+matching information. Any pair of views that have a view correlation form an
+edge in the <a class="reference internal" href="#ViewGraph" title="ViewGraph"><tt class="xref cpp cpp-class docutils literal"><span class="pre">ViewGraph</span></tt></a> such that the nodes in the graph are
+<a class="reference internal" href="#View" title="View"><tt class="xref cpp cpp-class docutils literal"><span class="pre">View</span></tt></a> that are connected by <tt class="xref cpp cpp-class docutils literal"><span class="pre">TwoViewInfo</span></tt> objects that contain
+information about the relative pose between the Views as well as matching
+information.</p>
+<p>Once you have a set of views and match information, you can add them to the view graph:</p>
+<div class="code c++ highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">View</span><span class="o">&gt;</span> <span class="n">views</span><span class="p">;</span>
+<span class="c1">// Match all views in the set.</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ViewIdPair</span><span class="p">,</span> <span class="n">TwoViewInfo</span><span class="o">&gt;</span> <span class="n">view_pair_matches</span><span class="p">;</span>
 
-  <span class="c1">// Original measured feature positions.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">Vector2d</span><span class="o">&gt;</span> <span class="n">feature_position_2D_distorted_</span><span class="p">;</span>
-  <span class="c1">// Feature positions after correcting for radial distortion.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">Vector2d</span><span class="o">&gt;</span> <span class="n">feature_position_2D_</span><span class="p">;</span>
+<span class="n">ViewGraph</span> <span class="n">view_graph</span><span class="p">;</span>
+<span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">view_pair</span> <span class="o">:</span> <span class="n">view_pair_matches</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="n">ViewIdPair</span><span class="o">&amp;</span> <span class="n">view_id_pair</span> <span class="o">=</span> <span class="n">view_pair</span><span class="p">.</span><span class="n">first</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">TwoViewInfo</span><span class="o">&amp;</span> <span class="n">two_view_info</span> <span class="o">=</span> <span class="n">view_pair</span><span class="p">.</span><span class="n">second</span><span class="p">;</span>
+  <span class="c1">// Only add view pairs to the view graph if they have strong visual coherence.</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">two_view_info</span><span class="p">.</span><span class="n">num_matched_features</span> <span class="o">&gt;</span> <span class="n">min_num_matched_features</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">view_graph</span><span class="p">.</span><span class="n">AddEdge</span><span class="p">(</span><span class="n">views</span><span class="p">[</span><span class="n">view_id_pair</span><span class="p">.</span><span class="n">first</span><span class="p">],</span>
+                       <span class="n">views</span><span class="p">[</span><span class="n">view_id_pair</span><span class="p">.</span><span class="n">second</span><span class="p">],</span>
+                       <span class="n">two_view_info</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 
-  <span class="c1">// Descriptors.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">VectorXf</span><span class="o">&gt;</span> <span class="n">descriptors_</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">BinaryVectorX</span><span class="o">&gt;</span> <span class="n">binary_descriptors_</span><span class="p">;</span>
-
-  <span class="c1">// 3D feature IDs. This assumes that a container of 3D feature positions is</span>
-  <span class="c1">// owned elsewhere. This is essentially the track ID, and the main usage is</span>
-  <span class="c1">// for reconstructions where many 2D points correspond to a single 3D point.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">feature_3D_ids_</span><span class="p">;</span>
-
-  <span class="c1">// If the 3D positions are stored locally, then we can keep them in a</span>
-  <span class="c1">// container here.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">Vector3d</span><span class="o">&gt;</span> <span class="n">feature_positions_3D_</span><span class="p">;</span>
-<span class="p">};</span>
+<span class="c1">// Process and/or manipulate the view graph.</span>
 </pre></div>
 </div>
-<p>The pose of the camera is contained in the <a class="reference internal" href="#CameraPose" title="CameraPose"><tt class="xref cpp cpp-class docutils literal"><span class="pre">CameraPose</span></tt></a> object. This
-class contains extrinsic (rotation and translation) and intrinsic calibration
-(focal length, principle point, radial distortion) information for the camera,
-and provides many convenience functions for various image and point
-transformations.</p>
-<blockquote>
-<div><dl class="class">
-<dt id="CameraPose">
-<em class="property">class </em><tt class="descname">CameraPose</tt><a class="headerlink" href="#CameraPose" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="function">
-<dt id="CameraPose::CameraPose">
- <tt class="descname">CameraPose</tt><big>(</big><big>)</big><a class="headerlink" href="#CameraPose::CameraPose" title="Permalink to this definition">¶</a></dt>
-<dd><p>The default constructor. Sets all values to identity values.</p>
-</dd></dl>
-
-<p>The <a class="reference internal" href="#CameraPose" title="CameraPose"><tt class="xref cpp cpp-class docutils literal"><span class="pre">CameraPose</span></tt></a> class must be initialized with the
-<a class="reference internal" href="#CameraPose::InitializePose__Eigen::Matrix3dCR.Eigen::Vector3dCR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC" title="CameraPose::InitializePose"><tt class="xref cpp cpp-func docutils literal"><span class="pre">InitializePose()</span></tt></a> method rather than with the constructor. There are
-several variations of this method so as to be flexible to the information
-that the user has available:</p>
-<dl class="function">
-<dt id="CameraPose::InitializePose__Eigen::Matrix3dCR.Eigen::Vector3dCR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC">
-void <tt class="descname">InitializePose</tt><big>(</big>const Eigen::Matrix3d&amp; <em>rotation</em>, const Eigen::Vector3d&amp; <em>translation</em>, const Eigen::Matrix3d&amp; <em>calibration</em>, const double <em>k1</em>, const double <em>k2</em>, const double <em>k3</em>, const double <em>k4</em><big>)</big><a class="headerlink" href="#CameraPose::InitializePose__Eigen::Matrix3dCR.Eigen::Vector3dCR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the camera pose with the full extrinsic (rotation and
-translation) and intrinsic (calibration matrix and radial distortion)
-parameters. The extrinsic parameters should provide world-to-camera
-transformations.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.doubleC.doubleC.doubleC.doubleC">
-void <tt class="descname">InitializePose</tt><big>(</big>const Eigen::Matrix&lt;double, 3, 4&gt;&amp; <em>projection_matrix</em>, const double <em>k1</em>, const double <em>k2</em>, const double <em>k3</em>, const double <em>k4</em><big>)</big><a class="headerlink" href="#CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.doubleC.doubleC.doubleC.doubleC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the pose with a projection matrix given by P = K * [R | t],
-where K is the calibration matrix, R is the rotation matrix, and t is the
-translation. The projection matrix provided should be a world-to-image
-transformation (as opposed to world-to-camera).</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC">
-void <tt class="descname">InitializePose</tt><big>(</big>const Eigen::Matrix&lt;double, 3, 4&gt;&amp; <em>transformation_matrix</em>, const Eigen::Matrix3d&amp; <em>calibration</em>, const double <em>k1</em>, const double <em>k2</em>, const double <em>k3</em>, const double <em>k4</em><big>)</big><a class="headerlink" href="#CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the pose with a given transformation matrix that defines the
-world-to-camera transformation.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::InitializePose__CameraPoseCR">
-void <tt class="descname">InitializePose</tt><big>(</big>const CameraPose&amp; <em>pose</em><big>)</big><a class="headerlink" href="#CameraPose::InitializePose__CameraPoseCR" title="Permalink to this definition">¶</a></dt>
-<dd><p>Copy constructor.</p>
-</dd></dl>
-
-<p>It is important to be able to access components of the camera pose, so we
-provide getter functions for all relative information:</p>
-<dl class="function">
-<dt id="CameraPose::rotation_matrixC">
-Eigen::Matrix3d <tt class="descname">rotation_matrix</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::rotation_matrixC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the rotation componenet of the transformation matrix.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::translationC">
-Eigen::Vector3d <tt class="descname">translation</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::translationC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the translation componenet of the transformation matrix.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::positionC">
-Eigen::Vector3d <tt class="descname">position</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::positionC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the camera position in the world coordinate system defined as
-position = -R&#8217; * t.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::calibration_matrixC">
-Eigen::Matrix3d <tt class="descname">calibration_matrix</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::calibration_matrixC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the 3x3 camera calibration matrix defined by K = diag(f, f, 1).</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::focal_lengthC">
-double <tt class="descname">focal_length</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::focal_lengthC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the focal length of the camera.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::radial_distortion__doubleP.doubleP.doubleP.doublePC">
-void <tt class="descname">radial_distortion</tt><big>(</big>double* <em>k1</em>, double* <em>k2</em>, double* <em>k3</em>, double* <em>k4</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::radial_distortion__doubleP.doubleP.doubleP.doublePC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the radial distortion parameters.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::projection_matrixC">
-Eigen::Matrix&lt;double, 3, 4&gt; <tt class="descname">projection_matrix</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::projection_matrixC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the full projection matrix that describes the camera pose.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::transformation_matrixC">
-Eigen::Matrix&lt;double, 3, 4&gt; <tt class="descname">transformation_matrix</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::transformation_matrixC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the transformation matrix <span class="math">\(T = [R | t]\)</span> i.e., the extrinsic parameters.</p>
-</dd></dl>
-
-<p>Finally, the most important functionality of a camera is that it projects
-points in the world into the image. Modeling this projection is a crucial
-part of structure from motion (and all projective geometry!), so we provide
-transformation functions to perform these tasks for you. We define three
-coordinate systems: the world coordinate system, camera coordinate system,
-and image coordinate system. The world coordinate system is defined as the
-3D coordinate system relative to some world origin. 3D points in SfM models
-are typically defined with respect to the world coordinate system. The
-camera coordinate system is the coordinate system centered around the
-camera. That is, with the camera at the origin looking down the
-z-axis. Finally, the image coordinate system is the camera coordinate system
-projected onto the image plane. The image coordinate system is defined in
-pixels, and may only be reconciled with respect to the other coordinate
-systems when the intrinsic paramters are known.</p>
-<p>So, given a point in the world coordinate system, <span class="math">\(X_w\)</span>, we can
-transform that point with a translation and rotation <span class="math">\(T=[R | t]\)</span> such
-that <span class="math">\(X_c = T * X_w\)</span> is a point in the camera coordinate system. To
-transform <span class="math">\(X_c\)</span> into image coordinates, we must apply the camera
-calibration matrix, <span class="math">\(K\)</span> such that <span class="math">\(X_i = K * T * X_w\)</span> is a point
-in the image plane (in pixels).</p>
-<p>The functions below provide these transformations for a single point, as
-well as optimized transformations for transforming multiple points at the
-same time.</p>
-<dl class="function">
-<dt id="CameraPose::WorldToCamera__Eigen::Vector3dCR.Eigen::Vector3dPC">
-void <tt class="descname">WorldToCamera</tt><big>(</big>const Eigen::Vector3d&amp; <em>world_point</em>, Eigen::Vector3d* <em>camera_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::WorldToCamera__Eigen::Vector3dCR.Eigen::Vector3dPC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transforms a point from the world coordinate system to the camera
-coordinate system.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::WorldToCamera__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC">
-void <tt class="descname">WorldToCamera</tt><big>(</big>const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_point</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>camera_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::WorldToCamera__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transformation method for multiple points.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::CameraToWorld__Eigen::Vector3dCR.Eigen::Vector3dPC">
-void <tt class="descname">CameraToWorld</tt><big>(</big>const Eigen::Vector3d&amp; <em>camera_point</em>, Eigen::Vector3d* <em>world_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::CameraToWorld__Eigen::Vector3dCR.Eigen::Vector3dPC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transforms a point from the camera coordinate system to the world
-coordinate system.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::CameraToWorld__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC">
-void <tt class="descname">CameraToWorld</tt><big>(</big>const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>camera_point</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>world_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::CameraToWorld__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transformation method for multiple points.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::CameraToImage__Eigen::Vector3dCR.Eigen::Vector2dPC">
-void <tt class="descname">CameraToImage</tt><big>(</big>const Eigen::Vector3d&amp; <em>camera_point</em>, Eigen::Vector2d* <em>image_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::CameraToImage__Eigen::Vector3dCR.Eigen::Vector2dPC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Projects the 3D points in camera coordinates into the image plane using the
-calibration matrix of the camera.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::CameraToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC">
-void <tt class="descname">CameraToImage</tt><big>(</big>const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>camera_point</em>, std::vector&lt;Eigen::Vector2d&gt;* <em>image_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::CameraToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Projection method for multiple points. NOTE: this method is void, and does
-not indicate whether points are in front of behind the camera.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::WorldToImage__Eigen::Vector3dCR.Eigen::Vector2dPC">
-bool <tt class="descname">WorldToImage</tt><big>(</big>const Eigen::Vector3d&amp; <em>world_point</em>, Eigen::Vector2d* <em>image_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::WorldToImage__Eigen::Vector3dCR.Eigen::Vector2dPC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Projects the 3D points in world coordinates into the image plane using the
-projection matrix of the camera. Returns true if the point is in front of
-the camera and false otherwise.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::WorldToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC">
-void <tt class="descname">WorldToImage</tt><big>(</big>const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_point</em>, std::vector&lt;Eigen::Vector2d&gt;* <em>image_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::WorldToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Projection method for multiple points. NOTE: this method is void, and does
-not indicate whether points are in front of behind the camera.</p>
-</dd></dl>
-
-<p>Correcting radial distortion can be a common operation for SfM so that the
-images may be as geomtetrically correct as possible. The following two
-functions will undistort image points based on the intrinsic paramters of
-the camera.</p>
-<dl class="function">
-<dt id="CameraPose::UndistortImagePoint__Eigen::Vector2dCR.Eigen::Vector2dPC">
-void <tt class="descname">UndistortImagePoint</tt><big>(</big>const Eigen::Vector2d&amp; <em>distorted_point</em>, Eigen::Vector2d* <em>undistorted_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::UndistortImagePoint__Eigen::Vector2dCR.Eigen::Vector2dPC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Undistorts the image point using the radial distortion parameters.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="CameraPose::UndistortImagePoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:PC">
-void <tt class="descname">UndistortImagePoint</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>distorted_point</em>, std::vector&lt;Eigen::Vector2d&gt;* <em>undistorted_point</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#CameraPose::UndistortImagePoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:PC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Undistort multiple points at the same time.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div></blockquote>
+<p>The edge values are especially useful for one-shot SfM where the relative poses
+are heavily exploited for computing the final poses.</p>
 </div>
-<div class="section" id="view-triangulation">
-<h2>2-View Triangulation<a class="headerlink" href="#view-triangulation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="camera">
+<h2>Camera<a class="headerlink" href="#camera" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Camera">
+<em class="property">class </em><tt class="descname">Camera</tt><a class="headerlink" href="#Camera" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Each <a class="reference internal" href="#View" title="View"><tt class="xref cpp cpp-class docutils literal"><span class="pre">View</span></tt></a> contains a <a class="reference internal" href="#Camera" title="Camera"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Camera</span></tt></a> object that contains intrinsic and
+extrinsic information about the camera that observed the scene. Theia has an
+efficient, compact <a class="reference internal" href="#Camera" title="Camera"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Camera</span></tt></a> class that abstracts away common image
+operations. One common example is 3D point reprojection.</p>
+<div class="code c++ highlight-c++"><div class="highlight"><pre><span class="n">FloatImage</span> <span class="nf">image</span><span class="p">(</span><span class="s">&quot;my_image.jpg&quot;</span><span class="p">);</span>
+<span class="kt">double</span> <span class="n">focal_length</span><span class="p">;</span>
+<span class="n">CHECK</span><span class="p">(</span><span class="n">image</span><span class="p">.</span><span class="n">FocalLengthPixels</span><span class="p">(</span><span class="o">&amp;</span><span class="n">focal_length</span><span class="p">));</span>
+
+<span class="k">const</span> <span class="kt">double</span> <span class="n">radial_distortion1</span> <span class="o">=</span> <span class="n">value</span> <span class="n">obtained</span> <span class="n">elsewhere</span><span class="p">...</span>
+<span class="k">const</span> <span class="kt">double</span> <span class="n">radial_distortion2</span> <span class="o">=</span> <span class="n">value</span> <span class="n">obtained</span> <span class="n">elsewhere</span><span class="p">...</span>
+
+<span class="n">Camera</span> <span class="n">camera</span><span class="p">;</span>
+<span class="n">camera</span><span class="p">.</span><span class="n">SetFocalLength</span><span class="p">(</span><span class="n">focal_length</span><span class="p">);</span>
+<span class="n">camera</span><span class="p">.</span><span class="n">SetPrincipalPoint</span><span class="p">(</span><span class="n">image</span><span class="p">.</span><span class="n">Width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">image</span><span class="p">.</span><span class="n">Height</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">);</span>
+<span class="n">camera</span><span class="p">.</span><span class="n">SetRadialDistortion</span><span class="p">(</span><span class="n">radial_distortion1</span><span class="p">,</span> <span class="n">radial_distortion2</span><span class="p">);</span>
+
+<span class="k">const</span> <span class="n">Eigen</span><span class="o">::</span><span class="n">Vector4d</span> <span class="n">point</span> <span class="o">=</span> <span class="n">value</span> <span class="n">obtained</span> <span class="n">elsewhere</span><span class="p">...</span>
+
+<span class="n">Eigen</span><span class="o">::</span><span class="n">Vector2d</span> <span class="n">reprojection_pixel</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">double</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">camera</span><span class="p">.</span><span class="n">ProjectPoint</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pixel</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Point was behind the camera!&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Point projection can be a tricky function when considering the camera intrinsics
+and it only becomes more complicated once nontrivial skew and aspect ratios
+(which Theia also uses as camera parameters) are considered.</p>
+<p>In addition to typical getter/setter methods for the camera parameters, the
+<a class="reference internal" href="#Camera" title="Camera"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Camera</span></tt></a> class also defines several helper functions:.</p>
+<dl class="function">
+<dt id="InitializeFromProjectionMatrix__iC.iC.Matrix3x4dC">
+bool <tt class="descname">InitializeFromProjectionMatrix</tt><big>(</big>const int <em>image_width</em>, const int <em>image_height</em>, const Matrix3x4d <em>projection_matrix</em><big>)</big><a class="headerlink" href="#InitializeFromProjectionMatrix__iC.iC.Matrix3x4dC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the camera intrinsic and extrinsic parameters from the
+projection matrix by decomposing the matrix with a RQ decomposition.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The projection matrix does not contain information about radial
+distortion, so those parameters will need to be set separately.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="GetProjectionMatrix__Matrix3x4dPC">
+void <tt class="descname">GetProjectionMatrix</tt><big>(</big>Matrix3x4d* <em>pmatrix</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#GetProjectionMatrix__Matrix3x4dPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the projection matrix. Does not include radial distortion.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GetCalibrationMatrix__Eigen::Matrix3dPC">
+void <tt class="descname">GetCalibrationMatrix</tt><big>(</big>Eigen::Matrix3d* <em>kmatrix</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#GetCalibrationMatrix__Eigen::Matrix3dPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the calibration matrix in the form specified above.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PixelToUnitDepthRay__Eigen::Vector2dCRC">
+Eigen::Vector3d <tt class="descname">PixelToUnitDepthRay</tt><big>(</big>const Eigen::Vector2d&amp; <em>pixel</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#PixelToUnitDepthRay__Eigen::Vector2dCRC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the pixel point to a ray in 3D space such that the origin of the
+ray is at the camera center and the direction is the pixel direction rotated
+according to the camera orientation in 3D space. The returned vector is not
+unit length.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="model">
+<h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<p>At the core of our SfM pipeline is an SfM <a class="reference internal" href="#Model" title="Model"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Model</span></tt></a>. A <a class="reference internal" href="#Model" title="Model"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Model</span></tt></a> is the representation of a 3D reconstuction consisting of Views and Tracks.  A <a class="reference internal" href="#View" title="View"><tt class="xref cpp cpp-class docutils literal"><span class="pre">View</span></tt></a> represents an image, containing <a class="reference internal" href="#Camera" title="Camera"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Camera</span></tt></a> pose information, metadata (usually from EXIF) and visibility information. A <a class="reference internal" href="#Track" title="Track"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Track</span></tt></a> is feature that has been matched across multiple views which may or may not have a valid 3D point. A <a class="reference internal" href="#View" title="View"><tt class="xref cpp cpp-class docutils literal"><span class="pre">View</span></tt></a> in a <a class="reference internal" href="#Model" title="Model"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Model</span></tt></a> will observe potentially many 3D points.</p>
+<dl class="class">
+<dt id="Model">
+<em class="property">class </em><tt class="descname">Model</tt><a class="headerlink" href="#Model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Docmentation coming soon...</p>
+</div>
+</div>
+<div class="section" id="estimating-global-poses">
+<h2>Estimating Global Poses<a class="headerlink" href="#estimating-global-poses" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Documentation coming soon..</p>
+</div>
+</div>
+<div class="section" id="triangulation">
+<h2>Triangulation<a class="headerlink" href="#triangulation" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><p>Triangulation in structure from motion calculates the 3D position of an image
 coordinate that has been tracked through several, if not many, images.</p>
@@ -412,12 +344,7 @@ the triangulation (e.g., the point is found to be at infinity) then <tt class="d
 is returned. On successful triangulation, <tt class="docutils literal"><span class="pre">true</span></tt> is returned.</p>
 </dd></dl>
 
-</div></blockquote>
-</div>
-<div class="section" id="n-view-triangulation">
-<h2>N-View Triangulation<a class="headerlink" href="#n-view-triangulation" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div><dl class="function">
+<dl class="function">
 <dt id="TriangulateNViewSVD__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">
 bool <tt class="descname">TriangulateNViewSVD</tt><big>(</big>const std::vector&lt;ProjectionMatrix&gt;&amp; <em>poses</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>points</em>, Eigen::Vector3d* <em>triangulated_point</em><big>)</big><a class="headerlink" href="#TriangulateNViewSVD__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -453,6 +380,13 @@ of <span class="math">\(A^\top A\)</span>, which is a 4x4 matrix.</p>
 </dd></dl>
 
 </div></blockquote>
+</div>
+<div class="section" id="bundle-adjustment">
+<h2>Bundle Adjustment<a class="headerlink" href="#bundle-adjustment" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Docmentation coming soon...</p>
+</div>
 </div>
 <div class="section" id="similarity-transformation">
 <h2>Similarity Transformation<a class="headerlink" href="#similarity-transformation" title="Permalink to this headline">¶</a></h2>

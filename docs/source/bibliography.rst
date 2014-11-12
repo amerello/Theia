@@ -12,6 +12,10 @@ Bibliography
    P4P Problem for Camera with Unknown Focal Length**. *Computer Vision and Pattern
    Recognition*, 2008. IEEE Conference on.
 
+.. [Cheng] Cheng, J. and Leng, C. and Wu, J. and Cui, H. **Hanqing LuFast and
+   Accurate Image Matching with Cascade Hashing for 3D Reconstruction**. *Computer
+   Vision and Pattern Recognition (CVPR)*, 2014.
+
 .. [Chum] O. Chum and J. Matas. 2005. **Matching with PROSAC - Progressive
    Sample Consensus**. *In Proceedings of the 2005 IEEE Computer Society
    Conference on Computer Vision and Pattern Recognition (CVPR'05)* - Volume 1 -
@@ -20,6 +24,10 @@ Bibliography
 
 .. [ChumRandomizedRansac] Chum, O. and Matas, J. **Randomized RANSAC and T(d,d)
    test**, *BMVC* 2002
+
+.. [BRIEF] Calonder, M. and Lepetit, V. and, Strecha, C. and Fua, P. **BRIEF:
+   Binary Robust Independent Elementary Features**, *11th European Conference
+   on Computer Vision (ECCV)*, September 2010
 
 .. [Fischler] M. Fischler and R. Bolles. 1981. **Random sample consensus: a
    paradigm for model fitting with applications to image analysis and automated
@@ -77,9 +85,17 @@ Bibliography
    Estimation via Residual Consensus**. *International Conference on Computer
    Vision (ICCV)*, 2011.
 
+.. [Stewenius5pt] H. Stewénius, C. Engels, D. Nistér. **Recent developments on
+   direct relative orientation**. *ISPRS Journal of Photogrammetry and Remote
+   Sensing*, 2006
+
 .. [SweeneyGDLS] C. Sweeney, V. Fragoso, T. Hollerer, M. Turk. **gDLS: A
    Scalable Solution to the Generalized Pose and Scale Problem**. *European
    Conference on Computer Vision (ECCV)*, 2014
+
+.. [SweeneyQEP] C. Sweeney, J. Flynn, M. Turk. **Solving for Relative Pose with a
+   Partially Known Rotation is a Quadratic Eigenvalue Problem**. *International
+   Conference on 3D Vision (3DV)*, 2014
 
 .. [Torr] P. H. S. Torr and A. Zisserman. 2000. **MLESAC: a new robust estimator
    with application to estimating image geometry**. *Comput. Vis. Image

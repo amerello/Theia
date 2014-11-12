@@ -47,11 +47,12 @@ Five Point Relative Pose
   .. function:: bool FivePointRelativePose(const Eigen::Vector2d image1_points[5], const Eigen::Vector2d image2_points[5], std::vector<Eigen::Matrix3d>* rotation, std::vector<Eigen::Vector3d>* translation)
 
     Computes the relative pose between two cameras using 5 corresponding
-    points. Algorithm is implemented based on "An Efficient Solution to the
-    Five-Point Relative Pose Problem" by [Nister]_. The rotation and translation
-    returned are defined such that :math:`E=[t]_{\times} * R` and
-    :math:`y^\top * E * x = 0` where :math:`y` are points from image2 and
-    :math:`x` are points from image1.
+    points. Algorithm is implemented based on "Recent Developments on Direct
+    Relative Orientation" by [Stewenius5p]_. This algorithm is known to be more
+    numerically stable while only slightly slower than the [Nister]_ method. The
+    rotation and translation returned are defined such that
+    :math:`E=[t]_{\times} * R` and :math:`y^\top * E * x = 0` where :math:`y`
+    are points from image2 and :math:`x` are points from image1.
 
     ``image1_points``: Location of features on the image plane of image 1.
 
@@ -87,7 +88,7 @@ Four Point Algorithm for Homography
 Eight Point Algorithm for Fundamental Matrix
 ============================================
 
-  .. function:: bool NormalizedEightPoint(const std::vector<Eigen::Vector2d>& image_1_points, const std::vector<Eigen::Vector2d>& image_2_points, Eigen::Matrix3d* fundamental_matrix)
+  .. function:: bool EightPointFundamentalMatrix(const std::vector<Eigen::Vector2d>& image_1_points, const std::vector<Eigen::Vector2d>& image_2_points, Eigen::Matrix3d* fundamental_matrix)
 
     Computes the `fundamental matrix
     <http://en.wikipedia.org/wiki/Fundamental_matrix_(computer_vision)>`_ relating
@@ -105,29 +106,6 @@ Eight Point Algorithm for Fundamental Matrix
     ``fundamental_matrix``: The computed fundamental matrix.
 
     ``returns:`` true on success, false on failure.
-
-
-  .. function:: bool GoldStandardEightPoint(const std::vector<Eigen::Vector2d>& image_1_points, const std::vector<Eigen::Vector2d>& image_2_points, Eigen::Matrix3d* fundamental_matrix)
-
-    Computes the `fundamental matrix
-    <http://en.wikipedia.org/wiki/Fundamental_matrix_(computer_vision)>`_
-    relating image points between two images such that :math:`x' F x = 0` for
-    all correspondences :math:`x` and :math:`x'` in images 1 and 2
-    respectively. The gold standard algorithm computes an initial estimation of
-    the fundmental matrix from the :func:`NormalizedEightPoint` then uses
-    Levenberg-Marquardt to minimize the geometric error (i.e., reprojection
-    error) according to algorithm 11.3 in [HartleyZisserman]_.
-
-    ``image_1_points``: Image points from image 1. At least 8 points must be
-    passed in.
-
-    ``image_2_points``: Image points from image 2. At least 8 points must be
-    passed in.
-
-    ``fundamental_matrix``: The computed fundamental matrix.
-
-    ``returns:`` true on success, false on failure.
-
 
 .. _section-dls_pnp:
 
@@ -216,3 +194,32 @@ Five Point Focal Length and Radial Distortion
     ``num_radial_distortion_params``).
 
     ``return``: true if successful, false if not.
+
+Three Point Relative Pose with a Partially Known Rotation
+=========================================================
+
+  .. function:: void ThreePointRelativePosePartialRotation(const Eigen::Vector3d& rotation_axis, const Eigen::Vector3d image_1_rays[3], const Eigen::Vector3d image_2_rays[3], std::vector<Eigen::Quaterniond>* soln_rotations, std::vector<Eigen::Vector3d>* soln_translations)
+
+    Computes the relative pose between two cameras using 3 correspondences and a
+    known vertical direction as a Quadratic Eigenvalue Problem [SweeneyQEP]_. Up
+    to 6 solutions are returned such that :math:`image_2_rays = R *
+    image_1_rays + t`. The ``axis`` that is passed in as a known axis of
+    rotation (when considering rotations as an angle axis). This is equivalent
+    to aligning the two cameras to a common direction such as the vertical
+    direction, which can be done using IMU data.
+
+Four Point Relative Pose with a Partially Known Rotation
+========================================================
+
+  .. function:: void FourPointRelativePosePartialRotation(const Eigen::Vector3d& rotation_axis, const Eigen::Vector3d image_1_origins[4], const Eigen::Vector3d image_1_rays[4], const Eigen::Vector3d image_2_origins[4], const Eigen::Vector3d image_2_rays[4], std::vector<Eigen::Quaterniond>* soln_rotations, std::vector<Eigen::Vector3d>* soln_translations)
+
+    Computes the relative pose between two generalized cameras using 4
+    correspondences and a known vertical direction as a Quadratic Eigenvalue
+    Problem [SweeneyQEP]_. A generalized camera is a camera setup with multiple
+    cameras such that the cameras do not have the same center of projection
+    (e.g., a multi-camera rig mounted on a car). Up to 8 solutions are returned
+    such that :math:`image_2_rays = R * image_1_rays + t`. The ``axis`` that is
+    passed in as a known axis of rotation (when considering rotations as an
+    angle axis). This is equivalent to aligning the two cameras to a common
+    direction such as the vertical direction, which can be done using IMU data.
+

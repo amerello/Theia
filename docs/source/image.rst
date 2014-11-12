@@ -65,6 +65,20 @@ standard image class that used for feature detection within Theia.
     // Output the grayscale pixel value.
     LOG(INFO) << "gray = " << middle_gray_pixel;
 
+  We also read in the EXIF information to determine the focal length. Currently,
+  we only make the focal length publicly accesible but we save all EXIF data and
+  this more functionality can be easily added if needed.
+
+  .. code-block:: c++
+
+    FloatImage my_img("test_img.jpg");
+    const double focal_length_in_pixels;
+    if (my_img.FocalLengthPixels(&focal_length_pixels)) {
+      LOG(INFO) << "Focal length from EXIF is: " << focal_length_pixels;
+    } else {
+      LOG(INFO) << "Could not extract the focal length from EXIF data.";
+    }
+
 We have also implemented some useful member functions of the :class:`Image` class. For a full list of functions, `theia/image/image.h`
 
 .. function:: int Rows() const

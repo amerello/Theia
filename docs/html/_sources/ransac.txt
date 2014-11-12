@@ -21,7 +21,6 @@ The following RANSAC methods are implemented in Theia:
 
 * :class:`Ransac`
 * :class:`Prosac`
-* :class:`Mlesac`
 * :class:`Arrsac`
 * :class:`Evsac`
 
@@ -112,6 +111,8 @@ pieces of information describing the ransac run.
       min_inlier_ratio. This is required to limit the number of RANSAC
       iteratios. The default ratio is 0.1
 
+  ``min_iterations``: The minimum number of iterations to perform before exiting RANSAC.
+
   ``max_iterations``: Another way to specify the maximal number of RANSAC
       iterations. In effect, the maximal number of iterations is set to
       min(max_ransac_iterations, T), where T is the number of iterations
@@ -122,6 +123,10 @@ pieces of information describing the ransac run.
       the number of RANSAC iterations is to set min_inlier_ratio and leave
       max_ransac_iterations to its default value.  Per default, this variable is
       set to std::numeric_limits<int>::max().
+
+  ``use_mle``: When set to ``true``, the MLE score [Torr]_ is used instead of
+      the inlier count. Thi is useful way to improve the performance of RANSAC in
+      most cases.
 
   ``use_Tdd_test``: Whether to use the T_{d,d}, with d=1, test proposed in [ChumRandomizedRansac]_
       After computing the model, RANSAC selects one match at random and evaluates all
@@ -255,13 +260,6 @@ constructor. The constructors for each method are specified as follows
     by quality! That is, that the highest quality data point is first, and the
     worst quality data point is last in the input vector.
 
-
-.. class:: Mlesac
-
-  A generalization of RANSAC that chooses to maximize the likelihood of an estimation rather than the inlier count. Proposed by [Torr]_ et. al.
-
-  .. function:: Mlesac(const RansacParams& params, const Estimator& estimator)
-
 .. class:: Arrsac
 
   Adaptive Real-Time Consensus is a method proposed by [Raguram]_ that utilizes
@@ -347,8 +345,6 @@ function will not change and can simply be inherited from the
       bool Initialize() {
 	Sampler<Datum>* random_sampler =
 	    new RandomSampler<Datum>(this->estimator_.SampleSize());
-	QualityMeasurement* inlier_support =
-	    new InlierSupport(this->ransac_params_.error_thresh);
 	return SampleConsensusEstimator<ModelEstimator>::Initialize(
 	    random_sampler, inlier_support);
       }

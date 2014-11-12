@@ -8,211 +8,162 @@
 Structure from Motion (SfM)
 ===========================
 
-Theia has implementations of many common Structure from Motion (sfm) algorithms. We
-attempt to use a generic interface whenever possible so as to maximize
-compatibility with other libraries.
+Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
+overall pipeline consists of several steps. First, we extract features (SIFT is
+the default). Then, we perform two-view matching and geometric verification to
+obtain relative poses between image pairs and create a :class:`ViewGraph`. Next,
+we perform global pose estimation with "one-shot" SfM. One-shot SfM is different
+from incremental SfM in that it considers the entire view graph at the same time
+instead of successfully adding more and more images to the
+:class:`Model`. One-shot SfM methods have been proven to be very fast with
+comparble or better accuracy to incremental SfM approaches, and they are much
+more easily parallelized. After we have obtained camera poses, we perform
+triangulation and :class:`BundleAdjustment` to obtain a valid 3D reconstruction
+consisting of cameras and 3D points.
+
+Extracting and matching :ref:`documentation-features` has been covered already, so we
+will now discuss how to go from feature matches to a :class:`ViewGraph`. First,
+however, we must present the basic building blocks for our SfM pipeline.
+
+Views
+=====
+
+.. class:: View
+
+At the heart of our SfM framework is the :class:`View` class which represents
+everything about an image that we want to reconstruct. It contains information
+about features from the image, camera pose information, and metadata information
+(including the image name and EXIF data). Views make up our basic visiblity
+constraints and are a fundamental part of the SfM pipeline.
 
-Projection Matrix
-=================
+Tracks
+======
 
-We provide two convenience matrices that are commonly used in multiview geometry. The first is a :class:`TransformationMatrix` which is an affine transformation matrix composed of rotation and translation of the form: :math:`\left[R | t\right]`, i.e., the extrinsic parameters of a camera. The :class:`TransformationMatrix` is merely a typedef of the Eigen affine transformation matrix. Similarly, a :class:`ProjectionMatrix` class is defined that representsthe intrinsic and extrinsic parameters, nameley matrices of the form: :math:`K\left[R | t \right]` where :math:`K` is a 3x3 matrix of the camera intrinsics (e.g., focal length, principle point, and radial distortion). The :class:`ProjectionMatrix` is merely a typedef of an Eigen 3x4 matrix.
+.. class:: Track
 
-Camera and CameraPose
-=====================
+A :class:`Track` represents a feature that has been matached over potentially
+many images. When a feature appears in multiple images it typically means that
+the features correspond to the same 3D point. These 3D points are useful
+constraints in SfM model, as they represent the "structure" in
+"Structure-from-Motion" and help to build a point cloud for our model.
 
-At the core of SfM are cameras which provide us with observations of 3D points. Theia uses a :class:`Camera` struct to maintain all imaging and view information. This includes information about the image captured, the feature positions (both in the image planes and in 3D space), and feature descriptors.
+ViewGraph
+=========
 
-.. code-block:: c++
+.. class:: ViewGraph
 
-  struct Camera {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Camera() {}
-    explicit Camera(const CameraPose& pose) : pose_(pose) {}
+A :class:`ViewGraph` is a basic SfM construct that is created from two-view
+matching information. Any pair of views that have a view correlation form an
+edge in the :class:`ViewGraph` such that the nodes in the graph are
+:class:`View` that are connected by :class:`TwoViewInfo` objects that contain
+information about the relative pose between the Views as well as matching
+information.
 
-    // The camera pose describing the position, orientation, and intrinsics of the
-    // camera.
-    CameraPose pose_;
+Once you have a set of views and match information, you can add them to the view graph:
 
-    // Width of the camera in pixels.
-    int width_;
-    // Height of the camera in pixels.
-    int height_;
+.. code:: c++
 
-    // Original measured feature positions.
-    std::vector<Eigen::Vector2d> feature_position_2D_distorted_;
-    // Feature positions after correcting for radial distortion.
-    std::vector<Eigen::Vector2d> feature_position_2D_;
+  std::vector<View> views;
+  // Match all views in the set.
+  std::vector<ViewIdPair, TwoViewInfo> view_pair_matches;
 
-    // Descriptors.
-    std::vector<Eigen::VectorXf> descriptors_;
-    std::vector<Eigen::BinaryVectorX> binary_descriptors_;
+  ViewGraph view_graph;
+  for (const auto& view_pair : view_pair_matches) {
+    const ViewIdPair& view_id_pair = view_pair.first;
+    const TwoViewInfo& two_view_info = view_pair.second;
+    // Only add view pairs to the view graph if they have strong visual coherence.
+    if (two_view_info.num_matched_features > min_num_matched_features) {
+      view_graph.AddEdge(views[view_id_pair.first],
+                         views[view_id_pair.second],
+                         two_view_info);
+    }
+  }
 
-    // 3D feature IDs. This assumes that a container of 3D feature positions is
-    // owned elsewhere. This is essentially the track ID, and the main usage is
-    // for reconstructions where many 2D points correspond to a single 3D point.
-    std::vector<size_t> feature_3D_ids_;
+  // Process and/or manipulate the view graph.
 
-    // If the 3D positions are stored locally, then we can keep them in a
-    // container here.
-    std::vector<Eigen::Vector3d> feature_positions_3D_;
-  };
+The edge values are especially useful for one-shot SfM where the relative poses
+are heavily exploited for computing the final poses.
 
-The pose of the camera is contained in the :class:`CameraPose` object. This
-class contains extrinsic (rotation and translation) and intrinsic calibration
-(focal length, principle point, radial distortion) information for the camera,
-and provides many convenience functions for various image and point
-transformations.
+Camera
+======
 
-  .. class:: CameraPose
+.. class:: Camera
 
-    .. cpp:function:: CameraPose()
+Each :class:`View` contains a :class:`Camera` object that contains intrinsic and
+extrinsic information about the camera that observed the scene. Theia has an
+efficient, compact :class:`Camera` class that abstracts away common image
+operations. One common example is 3D point reprojection.
 
-      The default constructor. Sets all values to identity values.
+.. code:: c++
 
-    The :class:`CameraPose` class must be initialized with the
-    :func:`InitializePose` method rather than with the constructor. There are
-    several variations of this method so as to be flexible to the information
-    that the user has available:
+   FloatImage image("my_image.jpg");
+   double focal_length;
+   CHECK(image.FocalLengthPixels(&focal_length));
 
-    .. cpp:function:: void InitializePose(const Eigen::Matrix3d& rotation, const Eigen::Vector3d& translation, const Eigen::Matrix3d& calibration, const double k1, const double k2, const double k3, const double k4)
+   const double radial_distortion1 = value obtained elsewhere...
+   const double radial_distortion2 = value obtained elsewhere...
 
-      Initialize the camera pose with the full extrinsic (rotation and
-      translation) and intrinsic (calibration matrix and radial distortion)
-      parameters. The extrinsic parameters should provide world-to-camera
-      transformations.
+   Camera camera;
+   camera.SetFocalLength(focal_length);
+   camera.SetPrincipalPoint(image.Width() / 2.0, image.Height() / 2.0);
+   camera.SetRadialDistortion(radial_distortion1, radial_distortion2);
 
-    .. cpp:function:: void InitializePose(const Eigen::Matrix<double, 3, 4>& projection_matrix, const double k1, const double k2, const double k3, const double k4)
+   const Eigen::Vector4d point = value obtained elsewhere...
 
-      Initialize the pose with a projection matrix given by P = K * [R | t],
-      where K is the calibration matrix, R is the rotation matrix, and t is the
-      translation. The projection matrix provided should be a world-to-image
-      transformation (as opposed to world-to-camera).
+   Eigen::Vector2d reprojection_pixel;
+   const double depth = camera.ProjectPoint(point, &pixel);
+   if (depth < 0) {
+     LOG(INFO) << "Point was behind the camera!";
+   }
 
-    .. cpp:function:: void InitializePose(const Eigen::Matrix<double, 3, 4>& transformation_matrix, const Eigen::Matrix3d& calibration, const double k1, const double k2, const double k3, const double k4)
+Point projection can be a tricky function when considering the camera intrinsics
+and it only becomes more complicated once nontrivial skew and aspect ratios
+(which Theia also uses as camera parameters) are considered.
 
-      Initialize the pose with a given transformation matrix that defines the
-      world-to-camera transformation.
+In addition to typical getter/setter methods for the camera parameters, the
+:class:`Camera` class also defines several helper functions:.
 
-    .. cpp:function:: void InitializePose(const CameraPose& pose)
+.. function:: bool InitializeFromProjectionMatrix(const int image_width, const int image_height, const Matrix3x4d projection_matrix)
 
-      Copy constructor.
+    Initializes the camera intrinsic and extrinsic parameters from the
+    projection matrix by decomposing the matrix with a RQ decomposition.
 
-    It is important to be able to access components of the camera pose, so we
-    provide getter functions for all relative information:
+    .. NOTE:: The projection matrix does not contain information about radial
+        distortion, so those parameters will need to be set separately.
 
-    .. cpp:function:: Eigen::Matrix3d rotation_matrix() const
+.. function:: void GetProjectionMatrix(Matrix3x4d* pmatrix) const
 
-      Get the rotation componenet of the transformation matrix.
+    Returns the projection matrix. Does not include radial distortion.
 
-    .. cpp:function:: Eigen::Vector3d translation() const
+.. function:: void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const
 
-      Get the translation componenet of the transformation matrix.
+    Returns the calibration matrix in the form specified above.
 
-    .. cpp:function:: Eigen::Vector3d position() const
+.. function:: Eigen::Vector3d PixelToUnitDepthRay(const Eigen::Vector2d& pixel) const
 
-      Get the camera position in the world coordinate system defined as
-      position = -R' * t.
+    Converts the pixel point to a ray in 3D space such that the origin of the
+    ray is at the camera center and the direction is the pixel direction rotated
+    according to the camera orientation in 3D space. The returned vector is not
+    unit length.
 
-    .. cpp:function:: Eigen::Matrix3d calibration_matrix() const
 
-      Get the 3x3 camera calibration matrix defined by K = diag(f, f, 1).
+Model
+=====
 
-    .. cpp:function:: double focal_length() const
+At the core of our SfM pipeline is an SfM :class:`Model`. A :class:`Model` is the representation of a 3D reconstuction consisting of Views and Tracks.  A :class:`View` represents an image, containing :class:`Camera` pose information, metadata (usually from EXIF) and visibility information. A :class:`Track` is feature that has been matched across multiple views which may or may not have a valid 3D point. A :class:`View` in a :class:`Model` will observe potentially many 3D points.
 
-      Get the focal length of the camera.
+.. class:: Model
 
-    .. cpp:function:: void radial_distortion(double* k1, double* k2, double* k3, double* k4) const
+.. NOTE:: Docmentation coming soon...
 
-      Returns the radial distortion parameters.
 
-    .. cpp:function:: Eigen::Matrix<double, 3, 4> projection_matrix() const
+Estimating Global Poses
+=======================
 
-      Returns the full projection matrix that describes the camera pose.
+.. NOTE:: Documentation coming soon..
 
-    .. cpp:function:: Eigen::Matrix<double, 3, 4> transformation_matrix() const
-
-      Returns the transformation matrix :math:`T = [R | t]` i.e., the extrinsic parameters.
-
-    Finally, the most important functionality of a camera is that it projects
-    points in the world into the image. Modeling this projection is a crucial
-    part of structure from motion (and all projective geometry!), so we provide
-    transformation functions to perform these tasks for you. We define three
-    coordinate systems: the world coordinate system, camera coordinate system,
-    and image coordinate system. The world coordinate system is defined as the
-    3D coordinate system relative to some world origin. 3D points in SfM models
-    are typically defined with respect to the world coordinate system. The
-    camera coordinate system is the coordinate system centered around the
-    camera. That is, with the camera at the origin looking down the
-    z-axis. Finally, the image coordinate system is the camera coordinate system
-    projected onto the image plane. The image coordinate system is defined in
-    pixels, and may only be reconciled with respect to the other coordinate
-    systems when the intrinsic paramters are known.
-
-    So, given a point in the world coordinate system, :math:`X_w`, we can
-    transform that point with a translation and rotation :math:`T=[R | t]` such
-    that :math:`X_c = T * X_w` is a point in the camera coordinate system. To
-    transform :math:`X_c` into image coordinates, we must apply the camera
-    calibration matrix, :math:`K` such that :math:`X_i = K * T * X_w` is a point
-    in the image plane (in pixels).
-
-    The functions below provide these transformations for a single point, as
-    well as optimized transformations for transforming multiple points at the
-    same time.
-
-    .. cpp:function:: void WorldToCamera(const Eigen::Vector3d& world_point, Eigen::Vector3d* camera_point) const
-
-      Transforms a point from the world coordinate system to the camera
-      coordinate system.
-
-    .. cpp:function:: void WorldToCamera(const std::vector<Eigen::Vector3d>& world_point, std::vector<Eigen::Vector3d>* camera_point) const
-
-      Transformation method for multiple points.
-
-    .. cpp:function:: void CameraToWorld(const Eigen::Vector3d& camera_point, Eigen::Vector3d* world_point) const
-
-      Transforms a point from the camera coordinate system to the world
-      coordinate system.
-
-    .. cpp:function:: void CameraToWorld(const std::vector<Eigen::Vector3d>& camera_point, std::vector<Eigen::Vector3d>* world_point) const
-
-      Transformation method for multiple points.
-
-    .. cpp:function:: void CameraToImage(const Eigen::Vector3d& camera_point, Eigen::Vector2d* image_point) const
-
-      Projects the 3D points in camera coordinates into the image plane using the
-      calibration matrix of the camera.
-
-    .. cpp:function:: void CameraToImage(const std::vector<Eigen::Vector3d>& camera_point, std::vector<Eigen::Vector2d>* image_point) const
-
-      Projection method for multiple points. NOTE: this method is void, and does
-      not indicate whether points are in front of behind the camera.
-
-    .. cpp:function:: bool WorldToImage(const Eigen::Vector3d& world_point, Eigen::Vector2d* image_point) const
-
-      Projects the 3D points in world coordinates into the image plane using the
-      projection matrix of the camera. Returns true if the point is in front of
-      the camera and false otherwise.
-
-    .. cpp:function:: void WorldToImage(const std::vector<Eigen::Vector3d>& world_point, std::vector<Eigen::Vector2d>* image_point) const
-
-      Projection method for multiple points. NOTE: this method is void, and does
-      not indicate whether points are in front of behind the camera.
-
-    Correcting radial distortion can be a common operation for SfM so that the
-    images may be as geomtetrically correct as possible. The following two
-    functions will undistort image points based on the intrinsic paramters of
-    the camera.
-
-    .. cpp:function:: void UndistortImagePoint(const Eigen::Vector2d& distorted_point, Eigen::Vector2d* undistorted_point) const
-
-      Undistorts the image point using the radial distortion parameters.
-
-    .. cpp:function:: void UndistortImagePoint(const std::vector<Eigen::Vector2d>& distorted_point, std::vector<Eigen::Vector2d>* undistorted_point) const
-
-      Undistort multiple points at the same time.
-
-2-View Triangulation
-====================
+Triangulation
+=============
 
   Triangulation in structure from motion calculates the 3D position of an image
   coordinate that has been tracked through several, if not many, images.
@@ -225,9 +176,6 @@ transformations.
     that will be used to triangulate the 3D point. If there was an error computing
     the triangulation (e.g., the point is found to be at infinity) then ``false``
     is returned. On successful triangulation, ``true`` is returned.
-
-N-View Triangulation
-====================
 
   .. cpp:function:: bool TriangulateNViewSVD(const std::vector<ProjectionMatrix>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
   .. cpp:function:: bool TriangulateNView(const std::vector<ProjectionMatrix>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
@@ -260,6 +208,11 @@ N-View Triangulation
     extracting the right nullspace of :math:`A`. The right nullspace of :math:`A`
     can be extracted efficiently by noting that it is equivalent to the nullspace
     of :math:`A^\top A`, which is a 4x4 matrix.
+
+Bundle Adjustment
+=================
+
+.. NOTE:: Docmentation coming soon...
 
 Similarity Transformation
 =========================

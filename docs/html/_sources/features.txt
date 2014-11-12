@@ -10,8 +10,10 @@ Features
 
 Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscal images if necessary.
 
-:class:`Keypoint`
-=================
+Keypoints
+=========
+
+.. class:: Keypoint
 
 The base :class:`Keypoint` class is a glorified struct that holds information about a keypoint that has been detected with a :class:`KeypointDetector`. Information about the keypoint's position, strength, scale, and orientation can be easily added and retrieved. The type of keypoint can be retrieved with the :func:`keypoint_type()` function.
 
@@ -24,8 +26,6 @@ The base :class:`Keypoint` class is a glorified struct that holds information ab
 	      enum KeypointType {
 	          INVALID = -1,
 		  OTHER = 0,
-		  FAST,
-		  HARRIS,
 		  SIFT,
 		  AGAST,
 		  BRISK
@@ -62,8 +62,10 @@ The base :class:`Keypoint` class is a glorified struct that holds information ab
 	      inline void set_orientation(double orientation);
 	   };
 
-:class:`KeypointDetector`
-=========================
+Keypoint Detector
+=================
+
+.. class:: KeypointDetector
 
 Detecting keypoints with Theia is very simple, and we have implemented a number of keypoint detectors that are commonly used in Computer Vision. Each keypoint detector is derived from the virtual class :class:`KeypointDetector`. Each derived class must implement the :func:`DetectKeypoints` method
 
@@ -135,8 +137,8 @@ Descriptors
 
 Theia uses a semi-generic interface for all descriptor types, namely, floating point and binary descriptors. For floating point descriptors (e.g., SIFT) we use Eigen::VectorXf and set the number of entries to equal the dimension of the descriptor. This way, we can utilize Eigen's speed and optimizations to get the most efficient and accurate representation of the descriptors. For binary descriptors, we define a new type in the Eigen namespace: ``Eigen::BinaryVectorX``. This vector is a custom type (defined in theia/alignment/alignment.h) that holds binary descriptors such that each bit corresponds to the descriptor dimension. This allows for the same interface between float and binary descriptors, while still utilizing the efficiency of SSE instructions when available.
 
-:class:`DescriptorExtractor`
-============================
+DescriptorExtractor
+===================
 
 .. class:: DescriptorExtractor
 
@@ -212,7 +214,10 @@ Theia uses a semi-generic interface for all descriptor types, namely, floating p
     const bool extraction_success =
       sift_extractor.ComputeDescriptors(image, &sift_keypoints, &sift_descriptors)
 
-We implement the following descriptor extractors (and corresponding descriptors) in Theia (constructors are given).
+We implement the following descriptor extractors (and corresponding descriptors)
+in Theia (constructors are given).
+
+.. class:: SiftDescriptorExtractor
 
 .. function:: SiftDescriptorExtractor::SiftDescriptorExtractor(int num_octaves, int num_scale_levels, int first_octave)
 
@@ -225,6 +230,21 @@ We implement the following descriptor extractors (and corresponding descriptors)
   (i.e., as many octaves as can be generated), 3, and 0 (i.e., the source
   image). Typically these parameters are set to match the :class:`SiftDetector`
   parameters.
+
+
+.. class:: BriefDescriptorExtractor
+
+.. function:: BriefDescriptorExtractor(int patch_sample_size, const int num_bytes)
+
+   The [BRIEF]_ algorithm is a binary algorithm that operates on local image
+   patches around a keypoint or a point of interest. The binary values are set
+   by randomly choosing two pixels to compare within the patch. The same random
+   pattern must be used in order to compare BRIEF descriptors (each
+   :class:`BriefDescriptorExtractor` object creates exactly one pattern that
+   may be used repeatedly).
+
+
+.. class:: FreakDescriptorExtractor
 
 .. function:: FreakDescriptorExtractor::FreakDescriptorExtractor(bool rotation_invariant, bool scale_invariant, int num_octaves)
 
@@ -239,6 +259,8 @@ We implement the following descriptor extractors (and corresponding descriptors)
   The :class:`FreakDescriptorExtractor` is typically used with the
   :class:`BriskDetector` to detect keypoints.
 
+.. class:: BriskDescriptorExtractor
+
 .. function:: BriskDescriptorExtractor::BriskDescriptorExtractor(bool rotation_invariant, bool scale_invariant, float pattern_scale)
 
   The "Binary Robust Invariant Scalable Keypoints" algorithm for binary descriptors of [Leutenegger]_
@@ -249,3 +271,84 @@ We implement the following descriptor extractors (and corresponding descriptors)
   ``scale_invariant``: Set to true if you want to normalize the scale of keypoints before computing the descriptor.
 
   ``pattern_scale``: Scale of the BRISK pattern to use.
+
+
+================
+Feature Matching
+================
+
+Features are useful in SfM because they can provide sparse matches between
+images, which can then provide geometric constrainst for the poses between these
+images. As such, feature matching is a very critical process in the context of
+multi-view geometry. We provide a generic interface for feature matching that
+works with binary descriptors or float descriptors.
+
+.. class:: FeatureMatcher
+
+.. code-block:: c++
+
+   // Struct to hold a feature match.
+   struct FeatureMatch{
+     // Indices of the matched features in image 1 and 2.
+     int feature1_ind;
+     int feature2_ind;
+     float distance;
+   };
+
+  // Holds all the feature matches between a pair of images.
+  struct ImagePairMatch {
+    int image1_ind;
+    int image2_ind;
+    std::vector<FeatureMatch> matches;
+  };
+
+  // Options for matching two sets of features.
+  struct FeatureMatcherOptions {
+    // Only symmetric matches are kept.
+    bool keep_only_symmetric_matches = true;
+
+    // Maximum distance (threshold) between descriptors to consider a candidate
+    // match as valid.
+    float max_match_distance = std::numeric_limits<float>::max();
+
+    // Only keep the matches that pass the lowes ratio test such that the distance
+    // of the best best match is less than lowes_ratio of the distance of the
+    // second nearest neighbor match.
+    bool use_lowes_ratio = true;
+    float lowes_ratio = 0.8;
+  };
+
+Each :class:`FeatureMatcher` implements two matching methods. The
+:class:`FeatureMatcher` is templated on a :class:`DistanceMetric` that describes
+how to compute the distance between two matches (we provide L2 and Hamming).
+
+.. function:: bool Match(const FeatureMatcherOptions& options, const std::vector<DescriptorType>& desc_1, const std::vector<DescriptorType>& desc_2, std::vector<FeatureMatch>* matches)
+
+  Match the descriptors from two images and outputs the matches based on the
+  :class:`FeatureMatcherOptions` that were input. The return value is true if
+  the matching was susccessful.
+
+.. function:: bool MatchAllPairs(const FeatureMatcherOptions& options, const int num_threads, const std::vector<std::vector<DescriptorType> >& descriptors, std::vector<ImagePairMatch>* image_pair_matches)
+
+  Given a set of images, this method computes the feature matches between each
+  possible image pair in the set. This method is multithreaded with the
+  specified number of threads to speed up the matching process. All
+  multithreaded matching methods are thread-safe.
+
+
+We have implemented two types of :class:`FeatureMatcher` with the interface described above.
+
+.. class:: BruteForceFeatureMatcher
+
+Matches are computed using an exhausitve brute force search through all
+matches. The search is the slowest but has the highest accuracy.
+
+.. class:: CascadeHashingFeatureMatcher
+
+Features are matched through a cascade hashing approach as described by
+[Cheng]_. Hash tables with extremely fast lookups are created without needing to
+train the data, resulting in an extremely fast and accurate matcher. This is the
+recommended approach for matching image sets.
+
+.. NOTE:: This method is tuned specifically for image to image matching and is only
+   applicable to float descriptors such as SIFT.

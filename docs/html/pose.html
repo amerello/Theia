@@ -89,6 +89,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -99,10 +101,11 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model"><tt class="docutils literal"><span class="pre">Model</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph"><tt class="docutils literal"><span class="pre">ViewGraph</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera"><tt class="docutils literal"><span class="pre">Camera</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -187,11 +190,12 @@ poses.</p>
 <dt id="FivePointRelativePose__Eigen::Vector2dCA.Eigen::Vector2dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P">
 bool <tt class="descname">FivePointRelativePose</tt><big>(</big>const Eigen::Vector2d <em>image1_points</em>[5], const Eigen::Vector2d <em>image2_points</em>[5], std::vector&lt;Eigen::Matrix3d&gt;* <em>rotation</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>translation</em><big>)</big><a class="headerlink" href="#FivePointRelativePose__Eigen::Vector2dCA.Eigen::Vector2dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the relative pose between two cameras using 5 corresponding
-points. Algorithm is implemented based on &#8220;An Efficient Solution to the
-Five-Point Relative Pose Problem&#8221; by <a class="reference internal" href="bibliography.html#nister" id="id2">[Nister]</a>. The rotation and translation
-returned are defined such that <span class="math">\(E=[t]_{\times} * R\)</span> and
-<span class="math">\(y^\top * E * x = 0\)</span> where <span class="math">\(y\)</span> are points from image2 and
-<span class="math">\(x\)</span> are points from image1.</p>
+points. Algorithm is implemented based on &#8220;Recent Developments on Direct
+Relative Orientation&#8221; by [Stewenius5p]. This algorithm is known to be more
+numerically stable while only slightly slower than the <a class="reference internal" href="bibliography.html#nister" id="id3">[Nister]</a> method. The
+rotation and translation returned are defined such that
+<span class="math">\(E=[t]_{\times} * R\)</span> and <span class="math">\(y^\top * E * x = 0\)</span> where <span class="math">\(y\)</span>
+are points from image2 and <span class="math">\(x\)</span> are points from image1.</p>
 <p><tt class="docutils literal"><span class="pre">image1_points</span></tt>: Location of features on the image plane of image 1.</p>
 <p><tt class="docutils literal"><span class="pre">image2_points</span></tt>: Location of features on the image plane of image 2.</p>
 <p><tt class="docutils literal"><span class="pre">returns</span></tt>: Output the number of poses computed as well as the relative
@@ -209,7 +213,7 @@ bool <tt class="descname">FourPointHomography</tt><big>(</big>const std::vector&
 <dd><p>Computes the 2D <a class="reference external" href="http://en.wikipedia.org/wiki/Homography_(computer_vision)">homography</a> mapping points
 in image 1 to image 2 such that: <span class="math">\(x' = Hx\)</span> where <span class="math">\(x\)</span> is a point in
 image 1 and <span class="math">\(x'\)</span> is a point in image 2. The algorithm implemented is
-the DLT algorithm based on algorithm 4.2 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id3">[HartleyZisserman]</a>.</p>
+the DLT algorithm based on algorithm 4.2 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id4">[HartleyZisserman]</a>.</p>
 <p><tt class="docutils literal"><span class="pre">image_1_points</span></tt>: Image points from image 1. At least 4 points must be
 passed in.</p>
 <p><tt class="docutils literal"><span class="pre">image_2_points</span></tt>: Image points from image 2. At least 4 points must be
@@ -223,31 +227,13 @@ passed in.</p>
 <span id="section-eight-point"></span><h2>Eight Point Algorithm for Fundamental Matrix<a class="headerlink" href="#eight-point-algorithm-for-fundamental-matrix" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><dl class="function">
-<dt id="NormalizedEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">
-bool <tt class="descname">NormalizedEightPoint</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_1_points</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_2_points</em>, Eigen::Matrix3d* <em>fundamental_matrix</em><big>)</big><a class="headerlink" href="#NormalizedEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="Permalink to this definition">¶</a></dt>
+<dt id="EightPointFundamentalMatrix__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">
+bool <tt class="descname">EightPointFundamentalMatrix</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_1_points</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_2_points</em>, Eigen::Matrix3d* <em>fundamental_matrix</em><big>)</big><a class="headerlink" href="#EightPointFundamentalMatrix__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the <a class="reference external" href="http://en.wikipedia.org/wiki/Fundamental_matrix_(computer_vision)">fundamental matrix</a> relating
 image points between two images such that <span class="math">\(x' F x = 0\)</span> for all
 correspondences <span class="math">\(x\)</span> and <span class="math">\(x'\)</span> in images 1 and 2 respectively. The
 normalized eight point algorithm is a speedy estimation of the fundamental
-matrix (Alg 11.1 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id4">[HartleyZisserman]</a>) that minimizes an algebraic error.</p>
-<p><tt class="docutils literal"><span class="pre">image_1_points</span></tt>: Image points from image 1. At least 8 points must be
-passed in.</p>
-<p><tt class="docutils literal"><span class="pre">image_2_points</span></tt>: Image points from image 2. At least 8 points must be
-passed in.</p>
-<p><tt class="docutils literal"><span class="pre">fundamental_matrix</span></tt>: The computed fundamental matrix.</p>
-<p><tt class="docutils literal"><span class="pre">returns:</span></tt> true on success, false on failure.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="GoldStandardEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">
-bool <tt class="descname">GoldStandardEightPoint</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_1_points</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_2_points</em>, Eigen::Matrix3d* <em>fundamental_matrix</em><big>)</big><a class="headerlink" href="#GoldStandardEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the <a class="reference external" href="http://en.wikipedia.org/wiki/Fundamental_matrix_(computer_vision)">fundamental matrix</a>
-relating image points between two images such that <span class="math">\(x' F x = 0\)</span> for
-all correspondences <span class="math">\(x\)</span> and <span class="math">\(x'\)</span> in images 1 and 2
-respectively. The gold standard algorithm computes an initial estimation of
-the fundmental matrix from the <a class="reference internal" href="#NormalizedEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="NormalizedEightPoint"><tt class="xref cpp cpp-func docutils literal"><span class="pre">NormalizedEightPoint()</span></tt></a> then uses
-Levenberg-Marquardt to minimize the geometric error (i.e., reprojection
-error) according to algorithm 11.3 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id6">[HartleyZisserman]</a>.</p>
+matrix (Alg 11.1 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id5">[HartleyZisserman]</a>) that minimizes an algebraic error.</p>
 <p><tt class="docutils literal"><span class="pre">image_1_points</span></tt>: Image points from image 1. At least 8 points must be
 passed in.</p>
 <p><tt class="docutils literal"><span class="pre">image_2_points</span></tt>: Image points from image 2. At least 8 points must be
@@ -265,7 +251,7 @@ passed in.</p>
 <dt id="DlsPnp__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
 void <tt class="descname">DlsPnp</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_position</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_point</em>, std::vector&lt;Eigen::Quaterniond&gt;* <em>solution_rotation</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>solution_translation</em><big>)</big><a class="headerlink" href="#DlsPnp__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the camera pose using the Perspective N-point method from &#8220;A Direct
-Least-Squares (DLS) Method for PnP&#8221; by <a class="reference internal" href="bibliography.html#hesch" id="id7">[Hesch]</a> and Stergios Roumeliotis. This
+Least-Squares (DLS) Method for PnP&#8221; by <a class="reference internal" href="bibliography.html#hesch" id="id6">[Hesch]</a> and Stergios Roumeliotis. This
 method is extremely scalable and highly accurate for the PnP problem. A
 minimum of 4 points are required, but there is no maximum number of points
 allowed as this is a least-squared approach. Theoretically, up to 27 solutions
@@ -291,7 +277,7 @@ least 4.</p>
 <dt id="FourPointPoseAndFocalLength__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Matrix:double.3.4::P">
 int <tt class="descname">FourPointPoseAndFocalLength</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_positions</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_points</em>, std::vector&lt;Eigen::Matrix&lt;double, 3, 4&gt;&gt;* <em>projection_matrices</em><big>)</big><a class="headerlink" href="#FourPointPoseAndFocalLength__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Matrix:double.3.4::P" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the camera pose and unknown focal length of an image given four 2D-3D
-correspondences, following the method of <a class="reference internal" href="bibliography.html#bujnak" id="id8">[Bujnak]</a>. This method involves
+correspondences, following the method of <a class="reference internal" href="bibliography.html#bujnak" id="id7">[Bujnak]</a>. This method involves
 computing a grobner basis from a modified constraint of the focal length and
 pose projection.</p>
 <p><tt class="docutils literal"><span class="pre">feature_position</span></tt>: Normalized image rays corresponding to model points. Must
@@ -314,7 +300,7 @@ are of the form <span class="math">\(P = K * [R | t]\)</span>.</p>
 <dt id="FivePointFocalLengthRadialDistortion__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.iC.std::vector:Eigen::Matrix:double.3.4::P.std::vector:std::vector:double::P">
 bool <tt class="descname">FivePointFocalLengthRadialDistortion</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_positions</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_points</em>, const int <em>num_radial_distortion_params</em>, std::vector&lt;Eigen::Matrix&lt;double, 3, 4&gt;&gt;* <em>projection_matrices</em>, std::vector&lt;std::vector&lt;double&gt;&gt;* <em>radial_distortions</em><big>)</big><a class="headerlink" href="#FivePointFocalLengthRadialDistortion__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.iC.std::vector:Eigen::Matrix:double.3.4::P.std::vector:std::vector:double::P" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the absolute pose, focal length, and radial distortion of a camera
-using five 3D-to-2D correspondences <a class="reference internal" href="bibliography.html#kukelova" id="id9">[Kukelova]</a>. The method solves for the
+using five 3D-to-2D correspondences <a class="reference internal" href="bibliography.html#kukelova" id="id8">[Kukelova]</a>. The method solves for the
 projection matrix (up to scale) by using a cross product constraint on the
 standard projection equation. This allows for simple solution to the first two
 rows of the projection matrix, and the third row (which contains the focal
@@ -335,6 +321,42 @@ observed. Exactly five points must be passed in.</p>
 radial distortion parameters (up to 3, but however many were specified in
 <tt class="docutils literal"><span class="pre">num_radial_distortion_params</span></tt>).</p>
 <p><tt class="docutils literal"><span class="pre">return</span></tt>: true if successful, false if not.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="three-point-relative-pose-with-a-partially-known-rotation">
+<h2>Three Point Relative Pose with a Partially Known Rotation<a class="headerlink" href="#three-point-relative-pose-with-a-partially-known-rotation" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="ThreePointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
+void <tt class="descname">ThreePointRelativePosePartialRotation</tt><big>(</big>const Eigen::Vector3d&amp; <em>rotation_axis</em>, const Eigen::Vector3d <em>image_1_rays</em>[3], const Eigen::Vector3d <em>image_2_rays</em>[3], std::vector&lt;Eigen::Quaterniond&gt;* <em>soln_rotations</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>soln_translations</em><big>)</big><a class="headerlink" href="#ThreePointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the relative pose between two cameras using 3 correspondences and a
+known vertical direction as a Quadratic Eigenvalue Problem <a class="reference internal" href="bibliography.html#sweeneyqep" id="id9">[SweeneyQEP]</a>. Up
+to 6 solutions are returned such that <span class="math">\(image_2_rays = R *
+image_1_rays + t\)</span>. The <tt class="docutils literal"><span class="pre">axis</span></tt> that is passed in as a known axis of
+rotation (when considering rotations as an angle axis). This is equivalent
+to aligning the two cameras to a common direction such as the vertical
+direction, which can be done using IMU data.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="four-point-relative-pose-with-a-partially-known-rotation">
+<h2>Four Point Relative Pose with a Partially Known Rotation<a class="headerlink" href="#four-point-relative-pose-with-a-partially-known-rotation" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FourPointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
+void <tt class="descname">FourPointRelativePosePartialRotation</tt><big>(</big>const Eigen::Vector3d&amp; <em>rotation_axis</em>, const Eigen::Vector3d <em>image_1_origins</em>[4], const Eigen::Vector3d <em>image_1_rays</em>[4], const Eigen::Vector3d <em>image_2_origins</em>[4], const Eigen::Vector3d <em>image_2_rays</em>[4], std::vector&lt;Eigen::Quaterniond&gt;* <em>soln_rotations</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>soln_translations</em><big>)</big><a class="headerlink" href="#FourPointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the relative pose between two generalized cameras using 4
+correspondences and a known vertical direction as a Quadratic Eigenvalue
+Problem <a class="reference internal" href="bibliography.html#sweeneyqep" id="id10">[SweeneyQEP]</a>. A generalized camera is a camera setup with multiple
+cameras such that the cameras do not have the same center of projection
+(e.g., a multi-camera rig mounted on a car). Up to 8 solutions are returned
+such that <span class="math">\(image_2_rays = R * image_1_rays + t\)</span>. The <tt class="docutils literal"><span class="pre">axis</span></tt> that is
+passed in as a known axis of rotation (when considering rotations as an
+angle axis). This is equivalent to aligning the two cameras to a common
+direction such as the vertical direction, which can be done using IMU data.</p>
 </dd></dl>
 
 </div></blockquote>

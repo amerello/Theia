@@ -89,6 +89,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -99,10 +101,11 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model"><tt class="docutils literal"><span class="pre">Model</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph"><tt class="docutils literal"><span class="pre">ViewGraph</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera"><tt class="docutils literal"><span class="pre">Camera</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -164,7 +167,6 @@ extend.</p>
 <ul class="simple">
 <li><a class="reference internal" href="#Ransac" title="Ransac"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Ransac</span></tt></a></li>
 <li><a class="reference internal" href="#Prosac" title="Prosac"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Prosac</span></tt></a></li>
-<li><a class="reference internal" href="#Mlesac" title="Mlesac"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Mlesac</span></tt></a></li>
 <li><a class="reference internal" href="#Arrsac" title="Arrsac"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Arrsac</span></tt></a></li>
 <li><a class="reference internal" href="#Evsac" title="Evsac"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Evsac</span></tt></a></li>
 </ul>
@@ -253,6 +255,9 @@ determine inliers.</dd>
 <dd>that the given set of correspondences has an inlier ratio of at least
 min_inlier_ratio. This is required to limit the number of RANSAC
 iteratios. The default ratio is 0.1</dd>
+</dl>
+<p><tt class="docutils literal"><span class="pre">min_iterations</span></tt>: The minimum number of iterations to perform before exiting RANSAC.</p>
+<dl class="docutils">
 <dt><tt class="docutils literal"><span class="pre">max_iterations</span></tt>: Another way to specify the maximal number of RANSAC</dt>
 <dd>iterations. In effect, the maximal number of iterations is set to
 min(max_ransac_iterations, T), where T is the number of iterations
@@ -263,7 +268,10 @@ avoid repeating RANSAC iterations.  However, the preferable way to limit
 the number of RANSAC iterations is to set min_inlier_ratio and leave
 max_ransac_iterations to its default value.  Per default, this variable is
 set to std::numeric_limits&lt;int&gt;::max().</dd>
-<dt><tt class="docutils literal"><span class="pre">use_Tdd_test</span></tt>: Whether to use the T_{d,d}, with d=1, test proposed in <a class="reference internal" href="bibliography.html#chumrandomizedransac" id="id1">[ChumRandomizedRansac]</a></dt>
+<dt><tt class="docutils literal"><span class="pre">use_mle</span></tt>: When set to <tt class="docutils literal"><span class="pre">true</span></tt>, the MLE score <a class="reference internal" href="bibliography.html#torr" id="id1">[Torr]</a> is used instead of</dt>
+<dd>the inlier count. Thi is useful way to improve the performance of RANSAC in
+most cases.</dd>
+<dt><tt class="docutils literal"><span class="pre">use_Tdd_test</span></tt>: Whether to use the T_{d,d}, with d=1, test proposed in <a class="reference internal" href="bibliography.html#chumrandomizedransac" id="id2">[ChumRandomizedRansac]</a></dt>
 <dd>After computing the model, RANSAC selects one match at random and evaluates all
 poses. If the point is an outlier to one pose, the corresponding pose is
 rejected. Notice that if the pose solver returns multiple poses, then at
@@ -377,7 +385,7 @@ constructor. The constructors for each method are specified as follows</p>
 <dl class="class">
 <dt id="Ransac">
 <em class="property">class </em><tt class="descname">Ransac</tt><a class="headerlink" href="#Ransac" title="Permalink to this definition">¶</a></dt>
-<dd><p>The standard <a class="reference external" href="http://en.wikipedia.org/wiki/RANSAC">RANSAC</a> implementation as originally proposed by Fischler et. al. <a class="reference internal" href="bibliography.html#fischler" id="id3">[Fischler]</a></p>
+<dd><p>The standard <a class="reference external" href="http://en.wikipedia.org/wiki/RANSAC">RANSAC</a> implementation as originally proposed by Fischler et. al. <a class="reference internal" href="bibliography.html#fischler" id="id4">[Fischler]</a></p>
 <dl class="function">
 <dt id="Ransac::Ransac__RansacParamsCR.EstimatorCR">
  <tt class="descname">Ransac</tt><big>(</big>const RansacParams&amp; <em>params</em>, const Estimator&amp; <em>estimator</em><big>)</big><a class="headerlink" href="#Ransac::Ransac__RansacParamsCR.EstimatorCR" title="Permalink to this definition">¶</a></dt>
@@ -389,7 +397,7 @@ constructor. The constructors for each method are specified as follows</p>
 <dt id="Prosac">
 <em class="property">class </em><tt class="descname">Prosac</tt><a class="headerlink" href="#Prosac" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div>Progressive Sampling Consensus as originally proposed by <a class="reference internal" href="bibliography.html#chum" id="id4">[Chum]</a>. Input data
+<div>Progressive Sampling Consensus as originally proposed by <a class="reference internal" href="bibliography.html#chum" id="id5">[Chum]</a>. Input data
 is assumed to have a quality to it, which can then be exposed in your
 sampling strategy by smartly sampling the high quality data points first,
 then progressively sampling the rest of the data set. In the worst case, this
@@ -404,17 +412,6 @@ algorithm degenerates to RANSAC, but typically is significantly faster.</div></b
 <dd>by quality! That is, that the highest quality data point is first, and the
 worst quality data point is last in the input vector.</dd>
 </dl>
-</dd></dl>
-
-<dl class="class">
-<dt id="Mlesac">
-<em class="property">class </em><tt class="descname">Mlesac</tt><a class="headerlink" href="#Mlesac" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generalization of RANSAC that chooses to maximize the likelihood of an estimation rather than the inlier count. Proposed by <a class="reference internal" href="bibliography.html#torr" id="id5">[Torr]</a> et. al.</p>
-<dl class="function">
-<dt id="Mlesac::Mlesac__RansacParamsCR.EstimatorCR">
- <tt class="descname">Mlesac</tt><big>(</big>const RansacParams&amp; <em>params</em>, const Estimator&amp; <em>estimator</em><big>)</big><a class="headerlink" href="#Mlesac::Mlesac__RansacParamsCR.EstimatorCR" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="class">
@@ -500,8 +497,6 @@ function will not change and can simply be inherited from the
   <span class="kt">bool</span> <span class="n">Initialize</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">Sampler</span><span class="o">&lt;</span><span class="n">Datum</span><span class="o">&gt;*</span> <span class="n">random_sampler</span> <span class="o">=</span>
         <span class="k">new</span> <span class="n">RandomSampler</span><span class="o">&lt;</span><span class="n">Datum</span><span class="o">&gt;</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">estimator_</span><span class="p">.</span><span class="n">SampleSize</span><span class="p">());</span>
-    <span class="n">QualityMeasurement</span><span class="o">*</span> <span class="n">inlier_support</span> <span class="o">=</span>
-        <span class="k">new</span> <span class="n">InlierSupport</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">ransac_params_</span><span class="p">.</span><span class="n">error_thresh</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">SampleConsensusEstimator</span><span class="o">&lt;</span><span class="n">ModelEstimator</span><span class="o">&gt;::</span><span class="n">Initialize</span><span class="p">(</span>
         <span class="n">random_sampler</span><span class="p">,</span> <span class="n">inlier_support</span><span class="p">);</span>
   <span class="p">}</span>

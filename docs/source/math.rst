@@ -44,22 +44,47 @@ have implemented solvers for these cases.
 Generic Polynomial Solver
 =========================
 
-For polynomials of degree > 4 there are no easy closed-form solutions, making the problem of finding roots much more difficult. However, we have implemented a function that will solve for all roots of a polynomial by constructing a companion matrix and solving with an eigenvalue decomposition.
+For polynomials of degree > 4 there are no easy closed-form solutions, making
+the problem of finding roots much more difficult. However, we have implemented
+several functions that will solve for polynomial roots. For all polynomials we
+require that the largest degree appears first and the smallest degree appears
+last in the input VectorXd.
 
-.. function:: std::vector<std::complex<double> > GetPolynomialRoots(const Eigen::VectorXd& coeffs)
-.. function:: std::vector<double> GetRealPolynomialRoots(const Eigen::VectorXd& coeffs)
+.. function:: bool FindPolynomialRoots(const Eigen::VectorXd& polynomial, Eigen::VectorXd* real, Eigen::VectorXd* imaginary)
 
-  These methods take in polynomial coefficients such that the highest degree
-  coefficient is the first element, and the lowest degree coefficient
-  (correspondening to degree 0) is the last element. Real or complex roots are
-  returned depending on the method called.
+  Roots are computed using the Companion Matrix with balancing to help improve
+  the condition of the matrix system we solve. This is a reliable, stable method
+  for computing roots but is most often the slowest method.
+
+.. function:: bool FindRealPolynomialRoots(const Eigen::VectorXd& polynomial, Eigen::VectorXd* real)
+
+  Using the Companion Matrix method above, we return only the real roots of the polynomial.
+
+
+.. function:: bool FindRealPolynomialRootsSturm(const Eigen::VectorXd& coeffs, Eigen::VectorXd* real_roots)
+
+  Real roots are bracketed within a boundary by analyzing Sturm sequences. Once
+  a root has been isolated to a bound, an iterative solver is used to determine
+  the actual root.
+
+.. function:: bool FindRealPolynomialRootsJenkinsTraub(const Eigen::VectorXd& coeffs, Eigen::VectorXd* real_roots)
+
+  The Jenkins-Traub method is a fast globally convergent iterative method for
+  finding roots of polynomials with real coefficients. It was designed for
+  machine precision and is robust to most polynomial types. One known case where
+  is struggles is for sparse polynomials e.g., :math:`x^n + 1 = 0` where n is very
+  large. This is the recommended method for iteratively computing polynomial
+  roots.
+
+.. function:: double FindRealRootIterative(const Eigen::VectorXd& polynomial, const double x0, const double epsilon, const int max_iter);
+
+  Finds a single polynomials root iteratively based on the starting position :math:`x_0` and
+  guaranteed precision of epsilon.
 
 .. _section-gauss_jordan:
 
 Guass-Jordan
 ============
-
-
 
 .. function:: void GaussJordan(Eigen::MatrixBase<Derived>* input, int max_rows = 99999)
 

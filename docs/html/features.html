@@ -68,12 +68,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#keypoint"><tt class="docutils literal"><span class="pre">Keypoint</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#keypointdetector"><tt class="docutils literal"><span class="pre">KeypointDetector</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#descriptors">Descriptors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#descriptorextractor"><tt class="docutils literal"><span class="pre">DescriptorExtractor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#descriptorextractor">DescriptorExtractor</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -89,6 +90,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -99,10 +102,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views">Views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -154,19 +160,22 @@
   <div class="section" id="features">
 <span id="documentation-features"></span><h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
 <p>Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscal images if necessary.</p>
-<div class="section" id="keypoint">
-<h2><a class="reference internal" href="#Keypoint" title="Keypoint"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Keypoint</span></tt></a><a class="headerlink" href="#keypoint" title="Permalink to this headline">¶</a></h2>
-<p>The base <a class="reference internal" href="#Keypoint" title="Keypoint"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Keypoint</span></tt></a> class is a glorified struct that holds information about a keypoint that has been detected with a <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Information about the keypoint&#8217;s position, strength, scale, and orientation can be easily added and retrieved. The type of keypoint can be retrieved with the <tt class="xref cpp cpp-func docutils literal"><span class="pre">keypoint_type()</span></tt> function.</p>
+<div class="section" id="keypoints">
+<h2>Keypoints<a class="headerlink" href="#keypoints" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="Keypoint">
 <em class="property">class </em><tt class="descname">Keypoint</tt><a class="headerlink" href="#Keypoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The base <a class="reference internal" href="#Keypoint" title="Keypoint"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Keypoint</span></tt></a> class is a glorified struct that holds information about a keypoint that has been detected with a <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Information about the keypoint&#8217;s position, strength, scale, and orientation can be easily added and retrieved. The type of keypoint can be retrieved with the <tt class="xref cpp cpp-func docutils literal"><span class="pre">keypoint_type()</span></tt> function.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descname">Keypoint</tt></dt>
 <dd><div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Keypoint</span> <span class="p">{</span>
  <span class="nl">public:</span>
    <span class="k">enum</span> <span class="n">KeypointType</span> <span class="p">{</span>
        <span class="n">INVALID</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
        <span class="n">OTHER</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-       <span class="n">FAST</span><span class="p">,</span>
-       <span class="n">HARRIS</span><span class="p">,</span>
        <span class="n">SIFT</span><span class="p">,</span>
        <span class="n">AGAST</span><span class="p">,</span>
        <span class="n">BRISK</span>
@@ -207,12 +216,17 @@
 </dd></dl>
 
 </div>
-<div class="section" id="keypointdetector">
-<h2><a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a><a class="headerlink" href="#keypointdetector" title="Permalink to this headline">¶</a></h2>
-<p>Detecting keypoints with Theia is very simple, and we have implemented a number of keypoint detectors that are commonly used in Computer Vision. Each keypoint detector is derived from the virtual class <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Each derived class must implement the <tt class="xref cpp cpp-func docutils literal"><span class="pre">DetectKeypoints()</span></tt> method</p>
+<div class="section" id="keypoint-detector">
+<h2>Keypoint Detector<a class="headerlink" href="#keypoint-detector" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="KeypointDetector">
 <em class="property">class </em><tt class="descname">KeypointDetector</tt><a class="headerlink" href="#KeypointDetector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Detecting keypoints with Theia is very simple, and we have implemented a number of keypoint detectors that are commonly used in Computer Vision. Each keypoint detector is derived from the virtual class <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Each derived class must implement the <tt class="xref cpp cpp-func docutils literal"><span class="pre">DetectKeypoints()</span></tt> method</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descname">KeypointDetector</tt></dt>
 <dd><dl class="function">
 <dt id="KeypointDetector::Initialize">
 bool <tt class="descname">Initialize</tt><big>(</big><big>)</big><a class="headerlink" href="#KeypointDetector::Initialize" title="Permalink to this definition">¶</a></dt>
@@ -283,7 +297,7 @@ octaves to downsample the image (default is 3).</p>
 <p>Theia uses a semi-generic interface for all descriptor types, namely, floating point and binary descriptors. For floating point descriptors (e.g., SIFT) we use Eigen::VectorXf and set the number of entries to equal the dimension of the descriptor. This way, we can utilize Eigen&#8217;s speed and optimizations to get the most efficient and accurate representation of the descriptors. For binary descriptors, we define a new type in the Eigen namespace: <tt class="docutils literal"><span class="pre">Eigen::BinaryVectorX</span></tt>. This vector is a custom type (defined in theia/alignment/alignment.h) that holds binary descriptors such that each bit corresponds to the descriptor dimension. This allows for the same interface between float and binary descriptors, while still utilizing the efficiency of SSE instructions when available.</p>
 </div>
 <div class="section" id="descriptorextractor">
-<h2><a class="reference internal" href="#DescriptorExtractor" title="DescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">DescriptorExtractor</span></tt></a><a class="headerlink" href="#descriptorextractor" title="Permalink to this headline">¶</a></h2>
+<h2>DescriptorExtractor<a class="headerlink" href="#descriptorextractor" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="DescriptorExtractor">
 <em class="property">class </em><tt class="descname">DescriptorExtractor</tt><a class="headerlink" href="#DescriptorExtractor" title="Permalink to this definition">¶</a></dt>
@@ -366,7 +380,13 @@ SIFT) while Eigen::BinaryVectorX is used for float descriptors.</p>
 </div>
 </dd></dl>
 
-<p>We implement the following descriptor extractors (and corresponding descriptors) in Theia (constructors are given).</p>
+<p>We implement the following descriptor extractors (and corresponding descriptors)
+in Theia (constructors are given).</p>
+<dl class="class">
+<dt id="SiftDescriptorExtractor">
+<em class="property">class </em><tt class="descname">SiftDescriptorExtractor</tt><a class="headerlink" href="#SiftDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="function">
 <dt id="SiftDescriptorExtractor::SiftDescriptorExtractor__i.i.i">
  <tt class="descclassname">SiftDescriptorExtractor::</tt><tt class="descname">SiftDescriptorExtractor</tt><big>(</big>int <em>num_octaves</em>, int <em>num_scale_levels</em>, int <em>first_octave</em><big>)</big><a class="headerlink" href="#SiftDescriptorExtractor::SiftDescriptorExtractor__i.i.i" title="Permalink to this definition">¶</a></dt>
@@ -379,27 +399,140 @@ image). Typically these parameters are set to match the <tt class="xref cpp cpp-
 parameters.</p>
 </dd></dl>
 
+<dl class="class">
+<dt id="BriefDescriptorExtractor">
+<em class="property">class </em><tt class="descname">BriefDescriptorExtractor</tt><a class="headerlink" href="#BriefDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="BriefDescriptorExtractor__i.iC">
+ <tt class="descname">BriefDescriptorExtractor</tt><big>(</big>int <em>patch_sample_size</em>, const int <em>num_bytes</em><big>)</big><a class="headerlink" href="#BriefDescriptorExtractor__i.iC" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="bibliography.html#brief" id="id6">[BRIEF]</a> algorithm is a binary algorithm that operates on local image
+patches around a keypoint or a point of interest. The binary values are set
+by randomly choosing two pixels to compare within the patch. The same random
+pattern must be used in order to compare BRIEF descriptors (each
+<a class="reference internal" href="#BriefDescriptorExtractor" title="BriefDescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">BriefDescriptorExtractor</span></tt></a> object creates exactly one pattern that
+may be used repeatedly).</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="FreakDescriptorExtractor">
+<em class="property">class </em><tt class="descname">FreakDescriptorExtractor</tt><a class="headerlink" href="#FreakDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="function">
 <dt id="FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i">
  <tt class="descclassname">FreakDescriptorExtractor::</tt><tt class="descname">FreakDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, int <em>num_octaves</em><big>)</big><a class="headerlink" href="#FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i" title="Permalink to this definition">¶</a></dt>
-<dd><p>The &#8220;Fast Retina Keypoint&#8221; algorithm for binary descriptors proposed by <a class="reference internal" href="bibliography.html#alahi" id="id6">[Alahi]</a> et al.</p>
+<dd><p>The &#8220;Fast Retina Keypoint&#8221; algorithm for binary descriptors proposed by <a class="reference internal" href="bibliography.html#alahi" id="id7">[Alahi]</a> et al.</p>
 <p><tt class="docutils literal"><span class="pre">rotation_invariant</span></tt>: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.</p>
 <p><tt class="docutils literal"><span class="pre">scale_invariant</span></tt>: Set to true if you want to normalize the scale of keypoints before computing the descriptor.</p>
 <p><tt class="docutils literal"><span class="pre">num_octaves</span></tt>: The number of octaves that the keypoints span.</p>
-<p>The <tt class="xref cpp cpp-class docutils literal"><span class="pre">FreakDescriptorExtractor</span></tt> is typically used with the
+<p>The <a class="reference internal" href="#FreakDescriptorExtractor" title="FreakDescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FreakDescriptorExtractor</span></tt></a> is typically used with the
 <tt class="xref cpp cpp-class docutils literal"><span class="pre">BriskDetector</span></tt> to detect keypoints.</p>
 </dd></dl>
+
+<dl class="class">
+<dt id="BriskDescriptorExtractor">
+<em class="property">class </em><tt class="descname">BriskDescriptorExtractor</tt><a class="headerlink" href="#BriskDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float">
  <tt class="descclassname">BriskDescriptorExtractor::</tt><tt class="descname">BriskDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, float <em>pattern_scale</em><big>)</big><a class="headerlink" href="#BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float" title="Permalink to this definition">¶</a></dt>
-<dd><p>The &#8220;Binary Robust Invariant Scalable Keypoints&#8221; algorithm for binary descriptors of <a class="reference internal" href="bibliography.html#leutenegger" id="id7">[Leutenegger]</a>
+<dd><p>The &#8220;Binary Robust Invariant Scalable Keypoints&#8221; algorithm for binary descriptors of <a class="reference internal" href="bibliography.html#leutenegger" id="id8">[Leutenegger]</a>
 et al.</p>
 <p><tt class="docutils literal"><span class="pre">rotation_invariant</span></tt>: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.</p>
 <p><tt class="docutils literal"><span class="pre">scale_invariant</span></tt>: Set to true if you want to normalize the scale of keypoints before computing the descriptor.</p>
 <p><tt class="docutils literal"><span class="pre">pattern_scale</span></tt>: Scale of the BRISK pattern to use.</p>
 </dd></dl>
 
+</div>
+</div>
+<div class="section" id="feature-matching">
+<h1>Feature Matching<a class="headerlink" href="#feature-matching" title="Permalink to this headline">¶</a></h1>
+<p>Features are useful in SfM because they can provide sparse matches between
+images, which can then provide geometric constrainst for the poses between these
+images. As such, feature matching is a very critical process in the context of
+multi-view geometry. We provide a generic interface for feature matching that
+works with binary descriptors or float descriptors.</p>
+<dl class="class">
+<dt id="FeatureMatcher">
+<em class="property">class </em><tt class="descname">FeatureMatcher</tt><a class="headerlink" href="#FeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="highlight-c++"><div class="highlight"><pre> <span class="c1">// Struct to hold a feature match.</span>
+ <span class="k">struct</span> <span class="n">FeatureMatch</span><span class="p">{</span>
+   <span class="c1">// Indices of the matched features in image 1 and 2.</span>
+   <span class="kt">int</span> <span class="n">feature1_ind</span><span class="p">;</span>
+   <span class="kt">int</span> <span class="n">feature2_ind</span><span class="p">;</span>
+   <span class="kt">float</span> <span class="n">distance</span><span class="p">;</span>
+ <span class="p">};</span>
+
+<span class="c1">// Holds all the feature matches between a pair of images.</span>
+<span class="k">struct</span> <span class="n">ImagePairMatch</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">image1_ind</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">image2_ind</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FeatureMatch</span><span class="o">&gt;</span> <span class="n">matches</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Options for matching two sets of features.</span>
+<span class="k">struct</span> <span class="n">FeatureMatcherOptions</span> <span class="p">{</span>
+  <span class="c1">// Only symmetric matches are kept.</span>
+  <span class="kt">bool</span> <span class="n">keep_only_symmetric_matches</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+
+  <span class="c1">// Maximum distance (threshold) between descriptors to consider a candidate</span>
+  <span class="c1">// match as valid.</span>
+  <span class="kt">float</span> <span class="n">max_match_distance</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">();</span>
+
+  <span class="c1">// Only keep the matches that pass the lowes ratio test such that the distance</span>
+  <span class="c1">// of the best best match is less than lowes_ratio of the distance of the</span>
+  <span class="c1">// second nearest neighbor match.</span>
+  <span class="kt">bool</span> <span class="n">use_lowes_ratio</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="kt">float</span> <span class="n">lowes_ratio</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Each <a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> implements two matching methods. The
+<a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> is templated on a <tt class="xref cpp cpp-class docutils literal"><span class="pre">DistanceMetric</span></tt> that describes
+how to compute the distance between two matches (we provide L2 and Hamming).</p>
+<dl class="function">
+<dt id="Match__FeatureMatcherOptionsCR.std::vector:DescriptorType:CR.std::vector:DescriptorType:CR.std::vector:FeatureMatch:P">
+bool <tt class="descname">Match</tt><big>(</big>const FeatureMatcherOptions&amp; <em>options</em>, const std::vector&lt;DescriptorType&gt;&amp; <em>desc_1</em>, const std::vector&lt;DescriptorType&gt;&amp; <em>desc_2</em>, std::vector&lt;FeatureMatch&gt;* <em>matches</em><big>)</big><a class="headerlink" href="#Match__FeatureMatcherOptionsCR.std::vector:DescriptorType:CR.std::vector:DescriptorType:CR.std::vector:FeatureMatch:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Match the descriptors from two images and outputs the matches based on the
+<tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcherOptions</span></tt> that were input. The return value is true if
+the matching was susccessful.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P">
+bool <tt class="descname">MatchAllPairs</tt><big>(</big>const FeatureMatcherOptions&amp; <em>options</em>, const int <em>num_threads</em>, const std::vector&lt;std::vector&lt;DescriptorType&gt;&gt;&amp; <em>descriptors</em>, std::vector&lt;ImagePairMatch&gt;* <em>image_pair_matches</em><big>)</big><a class="headerlink" href="#MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of images, this method computes the feature matches between each
+possible image pair in the set. This method is multithreaded with the
+specified number of threads to speed up the matching process. All
+multithreaded matching methods are thread-safe.</p>
+</dd></dl>
+
+<p>We have implemented two types of <a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> with the interface described above.</p>
+<dl class="class">
+<dt id="BruteForceFeatureMatcher">
+<em class="property">class </em><tt class="descname">BruteForceFeatureMatcher</tt><a class="headerlink" href="#BruteForceFeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Matches are computed using an exhausitve brute force search through all
+matches. The search is the slowest but has the highest accuracy.</p>
+<dl class="class">
+<dt id="CascadeHashingFeatureMatcher">
+<em class="property">class </em><tt class="descname">CascadeHashingFeatureMatcher</tt><a class="headerlink" href="#CascadeHashingFeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Features are matched through a cascade hashing approach as described by
+<a class="reference internal" href="bibliography.html#cheng" id="id9">[Cheng]</a>. Hash tables with extremely fast lookups are created without needing to
+train the data, resulting in an extremely fast and accurate matcher. This is the
+recommended approach for matching image sets.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is tuned specifically for image to image matching and is only
+applicable to float descriptors such as SIFT.</p>
 </div>
 </div>
 

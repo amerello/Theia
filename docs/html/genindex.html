@@ -67,12 +67,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint"><tt class="docutils literal"><span class="pre">Keypoint</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypointdetector"><tt class="docutils literal"><span class="pre">KeypointDetector</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor"><tt class="docutils literal"><span class="pre">DescriptorExtractor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -88,6 +89,8 @@
 <li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
@@ -98,10 +101,14 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#projection-matrix">Projection Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera-and-camerapose">Camera and CameraPose</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#view-triangulation">2-View Triangulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#n-view-triangulation">N-View Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views">Views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -164,11 +171,11 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -212,6 +219,20 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="features.html#BriefDescriptorExtractor">BriefDescriptorExtractor (C++ class)</a>
+  </dt>
+
+      <dd><dl>
+        
+  <dt><a href="features.html#BriefDescriptorExtractor__i.iC">(C++ function)</a>
+  </dt>
+
+      </dl></dd>
+      
+  <dt><a href="features.html#BriskDescriptorExtractor">BriskDescriptorExtractor (C++ class)</a>
+  </dt>
+
+      
   <dt><a href="features.html#BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float">BriskDescriptorExtractor::BriskDescriptorExtractor (C++ function)</a>
   </dt>
 
@@ -219,6 +240,10 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="features.html#BriskDetector::BriskDetector__i.i">BriskDetector::BriskDetector (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="features.html#BruteForceFeatureMatcher">BruteForceFeatureMatcher (C++ class)</a>
   </dt>
 
   </dl></td>
@@ -232,75 +257,19 @@
   </dt>
 
       
-  <dt><a href="sfm.html#CameraPose">CameraPose (C++ class)</a>
+  <dt><a href="sfm.html#Camera">Camera (C++ class)</a>
   </dt>
 
       
-  <dt><a href="sfm.html#CameraPose::calibration_matrixC">CameraPose::calibration_matrix (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::CameraPose">CameraPose::CameraPose (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::CameraToImage__Eigen::Vector3dCR.Eigen::Vector2dPC">CameraPose::CameraToImage (C++ function)</a>, <a href="sfm.html#CameraPose::CameraToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC">[1]</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::CameraToWorld__Eigen::Vector3dCR.Eigen::Vector3dPC">CameraPose::CameraToWorld (C++ function)</a>, <a href="sfm.html#CameraPose::CameraToWorld__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC">[1]</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::focal_lengthC">CameraPose::focal_length (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::InitializePose__Eigen::Matrix3dCR.Eigen::Vector3dCR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC">CameraPose::InitializePose (C++ function)</a>, <a href="sfm.html#CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.doubleC.doubleC.doubleC.doubleC">[1]</a>, <a href="sfm.html#CameraPose::InitializePose__Eigen::Matrix:double.3.4:CR.Eigen::Matrix3dCR.doubleC.doubleC.doubleC.doubleC">[2]</a>, <a href="sfm.html#CameraPose::InitializePose__CameraPoseCR">[3]</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::positionC">CameraPose::position (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::projection_matrixC">CameraPose::projection_matrix (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::radial_distortion__doubleP.doubleP.doubleP.doublePC">CameraPose::radial_distortion (C++ function)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="sfm.html#CameraPose::rotation_matrixC">CameraPose::rotation_matrix (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::transformation_matrixC">CameraPose::transformation_matrix (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::translationC">CameraPose::translation (C++ function)</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::UndistortImagePoint__Eigen::Vector2dCR.Eigen::Vector2dPC">CameraPose::UndistortImagePoint (C++ function)</a>, <a href="sfm.html#CameraPose::UndistortImagePoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:PC">[1]</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::WorldToCamera__Eigen::Vector3dCR.Eigen::Vector3dPC">CameraPose::WorldToCamera (C++ function)</a>, <a href="sfm.html#CameraPose::WorldToCamera__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:PC">[1]</a>
-  </dt>
-
-      
-  <dt><a href="sfm.html#CameraPose::WorldToImage__Eigen::Vector3dCR.Eigen::Vector2dPC">CameraPose::WorldToImage (C++ function)</a>, <a href="sfm.html#CameraPose::WorldToImage__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector2d:PC">[1]</a>
+  <dt><a href="features.html#CascadeHashingFeatureMatcher">CascadeHashingFeatureMatcher (C++ class)</a>
   </dt>
 
       
   <dt><a href="image.html#ChannelsC">Channels (C++ function)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="image.html#ColsC">Cols (C++ function)</a>
   </dt>
@@ -352,15 +321,19 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="ransac.html#Estimator">Estimator (C++ class)</a>
+  <dt><a href="pose.html#EightPointFundamentalMatrix__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">EightPointFundamentalMatrix (C++ function)</a>
   </dt>
 
       
-  <dt><a href="ransac.html#Evsac">Evsac (C++ class)</a>
+  <dt><a href="ransac.html#Estimator">Estimator (C++ class)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="ransac.html#Evsac">Evsac (C++ class)</a>
+  </dt>
+
       
   <dt><a href="ransac.html#Evsac::Evsac__RansacParametersCR.ModelEstimatorCR.Eigen::MatrixXdCR.doubleC.FittingMethodC">Evsac::Evsac (C++ function)</a>
   </dt>
@@ -372,9 +345,31 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="features.html#FeatureMatcher">FeatureMatcher (C++ class)</a>
+  </dt>
+
+      
+  <dt><a href="math.html#FindPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP.Eigen::VectorXdP">FindPolynomialRoots (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="math.html#FindRealPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP">FindRealPolynomialRoots (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="math.html#FindRealPolynomialRootsJenkinsTraub__Eigen::VectorXdCR.Eigen::VectorXdP">FindRealPolynomialRootsJenkinsTraub (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="math.html#FindRealPolynomialRootsSturm__Eigen::VectorXdCR.Eigen::VectorXdP">FindRealPolynomialRootsSturm (C++ function)</a>
+  </dt>
+
+      
   <dt><a href="pose.html#FivePointFocalLengthRadialDistortion__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.iC.std::vector:Eigen::Matrix:double.3.4::P.std::vector:std::vector:double::P">FivePointFocalLengthRadialDistortion (C++ function)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="pose.html#FivePointRelativePose__Eigen::Vector2dCA.Eigen::Vector2dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P">FivePointRelativePose (C++ function)</a>
   </dt>
@@ -383,10 +378,16 @@
   <dt><a href="pose.html#FourPointHomography__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">FourPointHomography (C++ function)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="pose.html#FourPointPoseAndFocalLength__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Matrix:double.3.4::P">FourPointPoseAndFocalLength (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="pose.html#FourPointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">FourPointRelativePosePartialRotation (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="features.html#FreakDescriptorExtractor">FreakDescriptorExtractor (C++ class)</a>
   </dt>
 
       
@@ -407,18 +408,14 @@
   <dt><a href="sfm.html#GdlsSimilarityTransform__std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P.std::vector:double:P">GdlsSimilarityTransform (C++ function)</a>
   </dt>
 
-      
-  <dt><a href="math.html#GetPolynomialRoots__Eigen::VectorXdCR">GetPolynomialRoots (C++ function)</a>
-  </dt>
-
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="math.html#GetRealPolynomialRoots__Eigen::VectorXdCR">GetRealPolynomialRoots (C++ function)</a>
+  <dt><a href="sfm.html#GetCalibrationMatrix__Eigen::Matrix3dPC">GetCalibrationMatrix (C++ function)</a>
   </dt>
 
       
-  <dt><a href="pose.html#GoldStandardEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">GoldStandardEightPoint (C++ function)</a>
+  <dt><a href="sfm.html#GetProjectionMatrix__Matrix3x4dPC">GetProjectionMatrix (C++ function)</a>
   </dt>
 
   </dl></td>
@@ -449,6 +446,10 @@
   <dt><a href="image.html#Image:T:::TwoThirdsSample__Image:T:PC">Image&lt;T&gt;::TwoThirdsSample (C++ function)</a>
   </dt>
 
+      
+  <dt><a href="sfm.html#InitializeFromProjectionMatrix__iC.iC.Matrix3x4dC">InitializeFromProjectionMatrix (C++ function)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -456,11 +457,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="features.html#Keypoint">Keypoint (C++ class)</a>
+  <dt><a href="features.html#Keypoint">Keypoint (C++ class)</a>, <a href="features.html#Keypoint">[1]</a>
   </dt>
 
       
-  <dt><a href="features.html#KeypointDetector">KeypointDetector (C++ class)</a>
+  <dt><a href="features.html#KeypointDetector">KeypointDetector (C++ class)</a>, <a href="features.html#KeypointDetector">[1]</a>
   </dt>
 
   </dl></td>
@@ -480,23 +481,17 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="ransac.html#Mlesac">Mlesac (C++ class)</a>
+  <dt><a href="features.html#Match__FeatureMatcherOptionsCR.std::vector:DescriptorType:CR.std::vector:DescriptorType:CR.std::vector:FeatureMatch:P">Match (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="features.html#MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P">MatchAllPairs (C++ function)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="ransac.html#Mlesac::Mlesac__RansacParamsCR.EstimatorCR">Mlesac::Mlesac (C++ function)</a>
-  </dt>
-
-  </dl></td>
-</tr></table>
-
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="pose.html#NormalizedEightPoint__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">NormalizedEightPoint (C++ function)</a>
+  <dt><a href="sfm.html#Model">Model (C++ class)</a>
   </dt>
 
   </dl></td>
@@ -506,34 +501,23 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="_templates/sphinx_rtd_theme/demo_docs/source/index.html#payments.dotpay.DotpayProvider">payments.dotpay.DotpayProvider (built-in class)</a>
+  <dt><a href="sfm.html#PixelToUnitDepthRay__Eigen::Vector2dCRC">PixelToUnitDepthRay (C++ function)</a>
   </dt>
 
       
   <dt><a href="pose.html#PoseFromThreePoints__Eigen::Vector2dCA.Eigen::Vector3dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P">PoseFromThreePoints (C++ function)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#Prosac">Prosac (C++ class)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#Prosac::Prosac__RansacParamsCR.EstimatorCR">Prosac::Prosac (C++ function)</a>
   </dt>
 
-      
-  <dt>
-    Python Enhancement Proposals
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="_templates/sphinx_rtd_theme/demo_docs/source/demo.html#index-0">PEP 287</a>
-  </dt>
-
-      </dl></dd>
   </dl></td>
 </tr></table>
 
@@ -552,27 +536,16 @@
   <dt><a href="ransac.html#RansacParameters">RansacParameters (C++ class)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#RansacSummary">RansacSummary (C++ class)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="image.html#Read__ssCR">Read (C++ function)</a>
   </dt>
 
-      
-  <dt>
-    RFC
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="_templates/sphinx_rtd_theme/demo_docs/source/demo.html#index-1">RFC 2822</a>
-  </dt>
-
-      </dl></dd>
       
   <dt><a href="image.html#RowsC">Rows (C++ function)</a>
   </dt>
@@ -589,6 +562,10 @@
 
       
   <dt><a href="math.html#SequentialProbabilityRatioTest__std::vector:double:CR.double.double.double.double.iP.doubleP">SequentialProbabilityRatioTest (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="features.html#SiftDescriptorExtractor">SiftDescriptorExtractor (C++ class)</a>
   </dt>
 
       
@@ -632,17 +609,41 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="sfm.html#Triangulate__ProjectionMatrixCR.ProjectionMatrixCR.Eigen::Vector2dCR.Eigen::Vector2dCR.Eigen::Vector3dP">Triangulate (C++ function)</a>
+  <dt><a href="pose.html#ThreePointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">ThreePointRelativePosePartialRotation (C++ function)</a>
   </dt>
 
       
-  <dt><a href="sfm.html#TriangulateNView__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNView (C++ function)</a>
+  <dt><a href="sfm.html#Track">Track (C++ class)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#Triangulate__ProjectionMatrixCR.ProjectionMatrixCR.Eigen::Vector2dCR.Eigen::Vector2dCR.Eigen::Vector3dP">Triangulate (C++ function)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="sfm.html#TriangulateNView__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNView (C++ function)</a>
+  </dt>
+
+      
   <dt><a href="sfm.html#TriangulateNViewSVD__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNViewSVD (C++ function)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="sfm.html#View">View (C++ class)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="sfm.html#ViewGraph">ViewGraph (C++ class)</a>
   </dt>
 
   </dl></td>
