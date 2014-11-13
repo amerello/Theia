@@ -67,7 +67,7 @@ standard image class that used for feature detection within Theia.
 
   We also read in the EXIF information to determine the focal length. Currently,
   we only make the focal length publicly accesible but we save all EXIF data and
-  this more functionality can be easily added if needed.
+  more functionality can be easily added if needed.
 
   .. code-block:: c++
 

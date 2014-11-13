@@ -72,9 +72,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#descriptors">Descriptors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-matching">Feature Matching</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -102,8 +102,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#views">Views</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
@@ -460,9 +459,8 @@ et al.</p>
 </dd></dl>
 
 </div>
-</div>
 <div class="section" id="feature-matching">
-<h1>Feature Matching<a class="headerlink" href="#feature-matching" title="Permalink to this headline">¶</a></h1>
+<h2>Feature Matching<a class="headerlink" href="#feature-matching" title="Permalink to this headline">¶</a></h2>
 <p>Features are useful in SfM because they can provide sparse matches between
 images, which can then provide geometric constrainst for the poses between these
 images. As such, feature matching is a very critical process in the context of
@@ -546,6 +544,7 @@ recommended approach for matching image sets.</p>
 <p class="first admonition-title">Note</p>
 <p class="last">This method is tuned specifically for image to image matching and is only
 applicable to float descriptors such as SIFT.</p>
+</div>
 </div>
 </div>
 

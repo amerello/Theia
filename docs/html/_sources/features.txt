@@ -278,7 +278,6 @@ in Theia (constructors are given).
   ``pattern_scale``: Scale of the BRISK pattern to use.
 
 
-================
 Feature Matching
 ================
 

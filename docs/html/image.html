@@ -68,12 +68,13 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint"><tt class="docutils literal"><span class="pre">Keypoint</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#keypointdetector"><tt class="docutils literal"><span class="pre">KeypointDetector</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor"><tt class="docutils literal"><span class="pre">DescriptorExtractor</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
 <li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
@@ -101,11 +102,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#model"><tt class="docutils literal"><span class="pre">Model</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph"><tt class="docutils literal"><span class="pre">ViewGraph</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera"><tt class="docutils literal"><span class="pre">Camera</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -211,7 +214,7 @@ operators. Pixels are referenced in x, y, c order (c is the color channel).</p>
 </div>
 <p>We also read in the EXIF information to determine the focal length. Currently,
 we only make the focal length publicly accesible but we save all EXIF data and
-this more functionality can be easily added if needed.</p>
+more functionality can be easily added if needed.</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">FloatImage</span> <span class="nf">my_img</span><span class="p">(</span><span class="s">&quot;test_img.jpg&quot;</span><span class="p">);</span>
 <span class="k">const</span> <span class="kt">double</span> <span class="n">focal_length_in_pixels</span><span class="p">;</span>
 <span class="k">if</span> <span class="p">(</span><span class="n">my_img</span><span class="p">.</span><span class="n">FocalLengthPixels</span><span class="p">(</span><span class="o">&amp;</span><span class="n">focal_length_pixels</span><span class="p">))</span> <span class="p">{</span>
