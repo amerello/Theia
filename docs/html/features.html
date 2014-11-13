@@ -109,6 +109,7 @@
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
 </ul>
 </li>
@@ -399,6 +400,10 @@ image). Typically these parameters are set to match the <tt class="xref cpp cpp-
 parameters.</p>
 </dd></dl>
 
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is patented and commercial use requires a license.</p>
+</div>
 <dl class="class">
 <dt id="BriefDescriptorExtractor">
 <em class="property">class </em><tt class="descname">BriefDescriptorExtractor</tt><a class="headerlink" href="#BriefDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
@@ -420,6 +425,10 @@ may be used repeatedly).</p>
 <em class="property">class </em><tt class="descname">FreakDescriptorExtractor</tt><a class="headerlink" href="#FreakDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is currently unstable. Further testing is required.</p>
+</div>
 <dl class="function">
 <dt id="FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i">
  <tt class="descclassname">FreakDescriptorExtractor::</tt><tt class="descname">FreakDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, int <em>num_octaves</em><big>)</big><a class="headerlink" href="#FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i" title="Permalink to this definition">¶</a></dt>
@@ -436,6 +445,10 @@ may be used repeatedly).</p>
 <em class="property">class </em><tt class="descname">BriskDescriptorExtractor</tt><a class="headerlink" href="#BriskDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is currently unstable. Further testing is required.</p>
+</div>
 <dl class="function">
 <dt id="BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float">
  <tt class="descclassname">BriskDescriptorExtractor::</tt><tt class="descname">BriskDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, float <em>pattern_scale</em><big>)</big><a class="headerlink" href="#BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float" title="Permalink to this definition">¶</a></dt>

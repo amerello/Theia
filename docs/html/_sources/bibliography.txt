@@ -49,6 +49,10 @@ Bibliography
    Position and Orientation**, *In Proceedings of The IEEE Conference on Computer Vision
    and Pattern Recognition (CVPR)*. Colorado Springs, USA. June 2011.
 
+.. [JiangICCV] Jiang, N. and Cui, Z., and Tan, P. **A Global Linear Method for
+   Camera Pose Registration**, *International Conference on Computer Vision
+   (ICCV)*, 2013.
+
 .. [Kukelova] Z. Kukelova, M. Bujnak, T. Pajdla. **Real-time Solution to the
    Absolute Pose Problem with Unknown Radial Distortion and Focal Length**. *In
    Proceedings of the International Conference on Computer Vision (ICCV) 2013*
@@ -56,6 +60,9 @@ Bibliography
 .. [Leutenegger] S. Leutenegger, M. Chli and R. Siegwart, **BRISK: Binary Robust
    Invariant Scalable Keypoints**, *In Proceedings of the IEEE International
    Conference on Computer Vision (ICCV) 2011*
+
+.. [Lindstrom] Lindstrom, P. **Triangulation Made Easy**, *In Proceedings of the
+   IEEE Conference on Computer Vision and Pattern Recognition*, 2010.
 
 .. [Lowe] David G. Lowe, **Object recognition from local scale-invariant features**,
    *International Conference on Computer Vision, Corfu, Greece (September 1999)*,
@@ -70,6 +77,10 @@ Bibliography
    **Adaptive and generic corner detection based on the accelerated segment test**.
    *In Proceedings of the European Conference on Computer Vision (ECCV'10)*,
    September 2010.
+
+.. [MoulonICCV] Moulon, P. and Monasse, P. and Marlet, R. **Global Fusion of
+   Relative Motions for Robust, Accurate and Scalable Structure from Motion**
+   *International Conference on Computer Vision (ICCV)*, 2013.
 
 .. [Nister] David Nistér. 2004. **An Efficient Solution to the Five-Point Relative
    Pose Problem**. *IEEE Trans. Pattern Anal. Mach. Intell*. 26, 6 (June 2004),
@@ -104,3 +115,6 @@ Bibliography
 .. [Umeyama] Umeyama, S. **Least-squares estimation of transformation parameters
    between two point patterns**. *IEEE Transactions on Pattern Analysis and Machine
    Intelligence*, 1991.
+
+.. [WilsonECCV] Wilson, K. and Snavely, N. **Robust Global Translation with 1DSfM**
+   *European Conference on Computer Vision*, 2014.

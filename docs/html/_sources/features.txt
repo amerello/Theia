@@ -231,6 +231,7 @@ in Theia (constructors are given).
   image). Typically these parameters are set to match the :class:`SiftDetector`
   parameters.
 
+.. NOTE:: This algorithm is patented and commercial use requires a license.
 
 .. class:: BriefDescriptorExtractor
 
@@ -246,6 +247,8 @@ in Theia (constructors are given).
 
 .. class:: FreakDescriptorExtractor
 
+.. NOTE:: This algorithm is currently unstable. Further testing is required.
+
 .. function:: FreakDescriptorExtractor::FreakDescriptorExtractor(bool rotation_invariant, bool scale_invariant, int num_octaves)
 
   The "Fast Retina Keypoint" algorithm for binary descriptors proposed by [Alahi]_ et al.
@@ -260,6 +263,8 @@ in Theia (constructors are given).
   :class:`BriskDetector` to detect keypoints.
 
 .. class:: BriskDescriptorExtractor
+
+.. NOTE:: This algorithm is currently unstable. Further testing is required.
 
 .. function:: BriskDescriptorExtractor::BriskDescriptorExtractor(bool rotation_invariant, bool scale_invariant, float pattern_scale)
 

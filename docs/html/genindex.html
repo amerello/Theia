@@ -101,8 +101,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#views">Views</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sfm.html#tracks">Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#viewgraph">ViewGraph</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sfm.html#model">Model</a></li>
@@ -171,6 +170,7 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
@@ -183,6 +183,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="sfm.html#AddTrack__std::vector:std::pair:ss.Feature::CR">AddTrack (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#AddView__ssCR">AddView (C++ function)</a>
+  </dt>
+
+      
   <dt><a href="features.html#AgastDetector::AgastDetector__AstPattern.i.b">AgastDetector::AgastDetector (C++ function)</a>
   </dt>
 
@@ -194,12 +202,12 @@
   <dt><a href="sfm.html#AlignPointCloudsUmeyama__iC.doubleCA.doubleCA.doubleA.doubleA.doubleP">AlignPointCloudsUmeyama (C++ function)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#Arrsac">Arrsac (C++ class)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#Arrsac::Arrsac__RansacParamsCR.EstimatorCR.i.i">Arrsac::Arrsac (C++ function)</a>
   </dt>
@@ -488,10 +496,34 @@
   <dt><a href="features.html#MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P">MatchAllPairs (C++ function)</a>
   </dt>
 
+      
+  <dt><a href="sfm.html#Model">Model (C++ class)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="sfm.html#Model">Model (C++ class)</a>
+  <dt><a href="sfm.html#MutableTrack__TrackIdC">MutableTrack (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#MutableView__ViewIdC">MutableView (C++ function)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="sfm.html#NumTracksC">NumTracks (C++ function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="sfm.html#NumViewsC">NumViews (C++ function)</a>
   </dt>
 
   </dl></td>
@@ -536,14 +568,22 @@
   <dt><a href="ransac.html#RansacParameters">RansacParameters (C++ class)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="ransac.html#RansacSummary">RansacSummary (C++ class)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="image.html#Read__ssCR">Read (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#RemoveTrack__TrackIdC">RemoveTrack (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#RemoveView__ViewIdC">RemoveView (C++ function)</a>
   </dt>
 
       
@@ -616,18 +656,36 @@
   <dt><a href="sfm.html#Track">Track (C++ class)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="sfm.html#Track__TrackIdCC">(C++ function)</a>
+  </dt>
+
+      </dl></dd>
       
-  <dt><a href="sfm.html#Triangulate__ProjectionMatrixCR.ProjectionMatrixCR.Eigen::Vector2dCR.Eigen::Vector2dCR.Eigen::Vector3dP">Triangulate (C++ function)</a>
+  <dt><a href="sfm.html#TrackIdsC">TrackIds (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#Triangulate__Matrix3x4dCR.Matrix3x4dCR.Eigen::Vector2dCR.Eigen::Vector2dCR.Eigen::Vector4dP">Triangulate (C++ function)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="sfm.html#TriangulateNView__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNView (C++ function)</a>
+  <dt><a href="sfm.html#TriangulateDLT__Matrix3x4dCR.Matrix3x4dCR.Eigen::Vector2dCR.Eigen::Vector2dCR.Eigen::Vector4dP">TriangulateDLT (C++ function)</a>
   </dt>
 
       
-  <dt><a href="sfm.html#TriangulateNViewSVD__std::vector:ProjectionMatrix:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNViewSVD (C++ function)</a>
+  <dt><a href="sfm.html#TriangulateMidpoint__Eigen::Vector3dCR.Eigen::Vector3dCR.Eigen::Vector3dCR.Eigen::Vector3dCR.Eigen::Vector4dP">TriangulateMidpoint (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#TriangulateNView__std::vector:Matrix3x4d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNView (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#TriangulateNViewSVD__std::vector:Matrix3x4d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Vector3dP">TriangulateNViewSVD (C++ function)</a>
   </dt>
 
   </dl></td>
@@ -640,10 +698,24 @@
   <dt><a href="sfm.html#View">View (C++ class)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="sfm.html#View__ViewIdCC">(C++ function)</a>
+  </dt>
+
+      </dl></dd>
+      
+  <dt><a href="sfm.html#ViewGraph">ViewGraph (C++ class)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="sfm.html#ViewGraph">ViewGraph (C++ class)</a>
+  <dt><a href="sfm.html#ViewIdFromName__ssCRC">ViewIdFromName (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="sfm.html#ViewIdsC">ViewIds (C++ function)</a>
   </dt>
 
   </dl></td>

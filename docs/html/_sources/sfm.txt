@@ -12,21 +12,27 @@ Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
 overall pipeline consists of several steps. First, we extract features (SIFT is
 the default). Then, we perform two-view matching and geometric verification to
 obtain relative poses between image pairs and create a :class:`ViewGraph`. Next,
-we perform global pose estimation with "one-shot" SfM. One-shot SfM is different
-from incremental SfM in that it considers the entire view graph at the same time
-instead of successfully adding more and more images to the
-:class:`Model`. One-shot SfM methods have been proven to be very fast with
-comparble or better accuracy to incremental SfM approaches, and they are much
-more easily parallelized. After we have obtained camera poses, we perform
-triangulation and :class:`BundleAdjustment` to obtain a valid 3D reconstruction
-consisting of cameras and 3D points.
+we perform global pose estimation with "one-shot" SfM (also called Global
+SfM).. One-shot SfM is different from incremental SfM in that it considers the
+entire view graph at the same time instead of successfully adding more and more
+images to the :class:`Model`. One-shot SfM methods have been proven to be very
+fast with comparable or better accuracy to incremental SfM approaches (See
+[JiangICCV]_, [MoulonICCV]_, [WilsonECCV]_), and they are much more easily
+parallelized. After we have obtained camera poses, we perform triangulation and
+:class:`BundleAdjustment` to obtain a valid 3D reconstruction consisting of
+cameras and 3D points.
 
 Extracting and matching :ref:`documentation-features` has been covered already, so we
 will now discuss how to go from feature matches to a :class:`ViewGraph`. First,
 however, we must present the basic building blocks for our SfM pipeline.
 
-Views
-=====
+Additionally, while this documentation is a useful overview of the SfM pipeline
+we provide, there are many other useful methods that are not documented here
+that can be found in the ``theia/vision/sfm/`` directory. All header and source
+files in Theia include extensive documentation.
+
+Views and Tracks
+================
 
 .. class:: View
 
@@ -35,9 +41,6 @@ everything about an image that we want to reconstruct. It contains information
 about features from the image, camera pose information, and metadata information
 (including the image name and EXIF data). Views make up our basic visiblity
 constraints and are a fundamental part of the SfM pipeline.
-
-Tracks
-======
 
 .. class:: Track
 
@@ -82,7 +85,8 @@ Once you have a set of views and match information, you can add them to the view
   // Process and/or manipulate the view graph.
 
 The edge values are especially useful for one-shot SfM where the relative poses
-are heavily exploited for computing the final poses.
+are heavily exploited for computing the final poses. Without a proper
+:class:`ViewGraph`, one-shot SfM would not be possible.
 
 Camera
 ======
@@ -92,33 +96,69 @@ Camera
 Each :class:`View` contains a :class:`Camera` object that contains intrinsic and
 extrinsic information about the camera that observed the scene. Theia has an
 efficient, compact :class:`Camera` class that abstracts away common image
-operations. One common example is 3D point reprojection.
+operations. This greatly relieves the pain of manually dealing with calibration
+and geometric transformations of images. We represent camera intrinsics such
+that the calibration matrix is:
+
+.. math::
+
+  K = \left[\begin{matrix}f & s & p_x \\ 0 & f * a & p_y \\ 0 & 0 & 1 \end{matrix} \right]
+
+where :math:`f` is the focal length (in pixels), :math:`s` is the skew,
+:math:`a` is the aspect ratio and :math:`p` is the principle point of the
+camera. All of these intrinsics may be accessed with getter and setter methods,
+e.g., :code:`double GetFocalLenth()` or :code:`void SetFocalLength(const double
+focal_length)`. Note that we do additionally allow for up to two radial
+distortion parameters, but these are not part of the calibration matrix so they
+must be set or retrieved separately from the corresponding getter/setter
+methods.
+
+We store the camera pose information as the transformation which maps world
+coordinates into camera coordinates. Our rotation is stored internally as an
+`SO(3)` rotation, which makes optimization with :class:`BundleAdjustment` more
+effective since the value is always a valid rotation (unlike e.g., Quaternions
+that must be normalized after each optimization step). However, for convenience
+we provide an interface to retrieve the rotation as a rotation matrix as
+well. Further, we store the camera position as opposed to the translation.
+
+The convenience of this camera class is clear with the common example of 3D
+point reprojection.
 
 .. code:: c++
 
+   // Open an image and obtain camera parameters.
    FloatImage image("my_image.jpg");
    double focal_length;
    CHECK(image.FocalLengthPixels(&focal_length));
-
    const double radial_distortion1 = value obtained elsewhere...
    const double radial_distortion2 = value obtained elsewhere...
+   const Eigen::Matrix3d rotation = value obtained elsewhere...
+   const Eigen::Vector3d position = value obtained elsewhere...
 
+   // Set up the camera.
    Camera camera;
+   camera.SetOrientationFromRotationMatrix(rotation);
+   camera.SetPosition(position);
    camera.SetFocalLength(focal_length);
    camera.SetPrincipalPoint(image.Width() / 2.0, image.Height() / 2.0);
    camera.SetRadialDistortion(radial_distortion1, radial_distortion2);
 
-   const Eigen::Vector4d point = value obtained elsewhere...
+   // Obtain a homogeneous 3D point
+   const Eigen::Vector4d homogeneous_point3d = value obtained elsewhere...
 
+   // Reproject the 3D point to a pixel.
    Eigen::Vector2d reprojection_pixel;
-   const double depth = camera.ProjectPoint(point, &pixel);
+   const double depth = camera.ProjectPoint(homogeneous_point3d, &pixel);
    if (depth < 0) {
      LOG(INFO) << "Point was behind the camera!";
    }
 
+   LOG(INFO) << "Homogeneous 3D point: " << homogeneous_point3d
+             << " reprojected to the pixel value of " << reprojection_pixel;
+
 Point projection can be a tricky function when considering the camera intrinsics
-and it only becomes more complicated once nontrivial skew and aspect ratios
-(which Theia also uses as camera parameters) are considered.
+and extrinsics. Theia takes care of this projection (including radial
+distortion) in a simple and efficient manner.
 
 In addition to typical getter/setter methods for the camera parameters, the
 :class:`Camera` class also defines several helper functions:.
@@ -150,12 +190,75 @@ In addition to typical getter/setter methods for the camera parameters, the
 Model
 =====
 
-At the core of our SfM pipeline is an SfM :class:`Model`. A :class:`Model` is the representation of a 3D reconstuction consisting of Views and Tracks.  A :class:`View` represents an image, containing :class:`Camera` pose information, metadata (usually from EXIF) and visibility information. A :class:`Track` is feature that has been matched across multiple views which may or may not have a valid 3D point. A :class:`View` in a :class:`Model` will observe potentially many 3D points.
+At the core of our SfM pipeline is an SfM :class:`Model`. A :class:`Model` is
+the representation of a 3D reconstuction consisting of a set of unique Views and
+Tracks. More importantly, the :class:`Model` class contains visibility
+information relating all of the Views and Tracks to each other. We identify each
+:class:`View` uniquely based on the name (a string). A good name for the view is
+the filename of the image that corresponds to the :class:`View`
+
+When creating an SfM reconstruction, you should add each :class:`View` and
+:class:`Track` through the :class:`Model` object. This will ensure that
+visibility information (such as which Tracks are observed a given View and which
+Views see a given Track) stays accurate. Views and Tracks are given a unique ID
+when added to the :class:`Model` to help make use of these structures
+lightweight and efficient.
 
 .. class:: Model
 
-.. NOTE:: Docmentation coming soon...
+.. function:: TrackId AddTrack(const std::vector<std::pair<std::string, Feature> >& track)
 
+    Add a track to the model with all of its features across views that observe
+    this track. Each pair contains a feature and the corresponding View name
+    (i.e., the string) that observes the feature. A new View will be created if
+    a View with the view name does not already exist. This method will not
+    estimate the position of the track. The TrackId returned will be unique or
+    will be kInvalidTrackId if the method fails.
+
+.. function:: bool RemoveTrack(const TrackId track_id)
+
+    Removes the track from the model and from any Views that observe this
+    track. Returns true on success and false on failure (e.g., the track does
+    not exist).
+
+.. function:: const Track* Track(const TrackId track_id) const
+.. function:: Track* MutableTrack(const TrackId track_id)
+
+    Returns the Track or a nullptr if the track does not exist.
+
+.. function:: std::vector<TrackId> TrackIds() const
+
+    Return all TrackIds in the model.
+
+.. function:: ViewId AddView(const std::string& view_name)
+
+    Adds a view to the model with the default initialization. The ViewId
+    returned is guaranteed to be unique or will be kInvalidViewId if the method
+    fails (e.g., if a view with that name already exists)
+
+.. function:: bool RemoveView(const ViewId view_id)
+
+    Removes the view from the model and removes all references to the view in
+    the tracks.
+
+    .. NOTE:: It is possible to have tracks of length 0 after this method is executed.
+
+.. function:: int NumViews() const
+.. function:: int NumTracks() const
+
+.. function:: const View* View(const ViewId view_id) const
+.. function:: View* MutableView(const ViewId view_id)
+
+    Returns the View or a nullptr if the track does not exist.
+
+.. function:: std::vector<ViewId> ViewIds() const
+
+    Return all ViewIds in the model.
+
+.. function:: ViewId ViewIdFromName(const std::string& view_name) const
+
+    Returns to ViewId of the view name, or kInvalidViewId if the view does not
+    exist.
 
 Estimating Global Poses
 =======================
@@ -168,17 +271,35 @@ Triangulation
   Triangulation in structure from motion calculates the 3D position of an image
   coordinate that has been tracked through several, if not many, images.
 
-  .. cpp:function:: bool Triangulate(const ProjectionMatrix& pose_left, const ProjectionMatrix& pose_right, const Eigen::Vector2d& point_left, const Eigen::Vector2d& point_right, Eigen::Vector3d* triangulated_point)
+  .. cpp:function:: bool Triangulate(const Matrix3x4d& pose1, const Matrix3x4d& pose2, const Eigen::Vector2d& point1, const Eigen::Vector2d& point2, Eigen::Vector4d* triangulated_point)
 
-    2-view triangulation using the DLT method described in
-    [HartleyZisserman]_. The poses are the (potentially calibrated) poses of the
-    two cameras, and the points are the 2D image points of the matched features
-    that will be used to triangulate the 3D point. If there was an error computing
-    the triangulation (e.g., the point is found to be at infinity) then ``false``
-    is returned. On successful triangulation, ``true`` is returned.
+    2-view triangulation using the method described in [Lindstrom]_. This method
+    is optimal in an L2 sense such that the reprojection errors are minimized
+    while enforcing the epipolar constraint between the two
+    cameras. Additionally, it basically the same speed as the
+    :func:`TriangulateDLT` method.
 
-  .. cpp:function:: bool TriangulateNViewSVD(const std::vector<ProjectionMatrix>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
-  .. cpp:function:: bool TriangulateNView(const std::vector<ProjectionMatrix>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
+    The poses are the (potentially calibrated) poses of the two cameras, and the
+    points are the 2D image points of the matched features that will be used to
+    triangulate the 3D point. On successful triangulation, ``true`` is
+    returned. The homogeneous 3d point is output so that it may be known if the
+    point is at infinity.
+
+  .. function:: bool TriangulateDLT(const Matrix3x4d& pose1, const Matrix3x4d& pose2, const Eigen::Vector2d& point1, const Eigen::Vector2d& point2, Eigen::Vector4d* triangulated_point)
+
+    The DLT triangulation method of [HartleyZisserman]_.
+
+  .. function:: bool TriangulateMidpoint(const Eigen::Vector3d& origin1, const Eigen::Vector3d& ray_direction1, const Eigen::Vector3d& origin2, const Eigen::Vector3d& ray_direction2, Eigen::Vector4d* triangulated_point)
+
+    Perform triangulation by determining the closest point between the two
+    rays. In this case, the ray origins are the camera positions and the
+    directions are the (unit-norm) ray directions of the features in 3D
+    space. This method is known to be suboptimal at minimizing the reprojection
+    error, but is approximately 10x faster than the other 2-view triangulation
+    methods.
+
+  .. function:: bool TriangulateNViewSVD(const std::vector<Matrix3x4d>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
+  .. function:: bool TriangulateNView(const std::vector<Matrix3x4d>& poses, const std::vector<Eigen::Vector2d>& points, Eigen::Vector3d* triangulated_point)
 
     We provide two N-view triangluation methods that minimizes an algebraic
     approximation of the geometric error. The first is the classic SVD method
@@ -217,7 +338,7 @@ Bundle Adjustment
 Similarity Transformation
 =========================
 
-  .. cpp:function:: void AlignPointCloudsICP(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3])
+  .. function:: void AlignPointCloudsICP(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3])
 
     We implement ICP for point clouds. We use Besl-McKay registration to align
     point clouds. We use SVD decomposition to find the rotation, as this is much
@@ -227,14 +348,14 @@ Similarity Transformation
     the left and right models have the same number of points, and that the
     points are aligned by correspondence (i.e. left[i] corresponds to right[i]).
 
-  .. cpp:function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3], double* scale)
+  .. function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3], double* scale)
 
     This function estimates the 3D similiarty transformation using the least
     squares method of [Umeyama]_. The returned rotation, translation, and scale
     align the left points to the right such that :math:`Right = s * R * Left +
     t`.
 
-  .. cpp:function:: void GdlsSimilarityTransform(const std::vector<Eigen::Vector3d>& ray_origin, const std::vector<Eigen::Vector3d>& ray_direction, const std::vector<Eigen::Vector3d>& world_point, std::vector<Eigen::Quaterniond>* solution_rotation, std::vector<Eigen::Vector3d>* solution_translation, std::vector<double>* solution_scale)
+  .. function:: void GdlsSimilarityTransform(const std::vector<Eigen::Vector3d>& ray_origin, const std::vector<Eigen::Vector3d>& ray_direction, const std::vector<Eigen::Vector3d>& world_point, std::vector<Eigen::Quaterniond>* solution_rotation, std::vector<Eigen::Vector3d>* solution_translation, std::vector<double>* solution_scale)
 
     Computes the solution to the generalized pose and scale problem based on the
     paper "gDLS: A Scalable Solution to the Generalized Pose and Scale Problem"
