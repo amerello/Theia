@@ -58,22 +58,26 @@ int main(int argc, char *argv[]) {
 
   // Load images and extract features
   const int num_images = img_filepaths.size();
-  std::vector<theia::FloatImage> images(num_images);
-  std::vector<std::vector<theia::Keypoint> > keypoints(num_images);
-  std::vector<std::vector<Eigen::VectorXf> > descriptors(num_images);
+  std::vector<theia::FloatImage*> images(num_images);
+  std::vector<std::vector<theia::Keypoint>* > keypoints(num_images);
+  std::vector<std::vector<Eigen::VectorXf>* > descriptors(num_images);
   theia::SiftDescriptorExtractor sift_extractor;
 
   double time_to_read_images = 0;
   for (int i = 0; i < num_images; i++) {
     auto start = std::chrono::system_clock::now();
-    images[i].Read(img_filepaths[i]);
-    sift_extractor.DetectAndExtractDescriptors(images[i],
-                                               &keypoints[i],
-                                               &descriptors[i]);
+
+    images[i] = new theia::FloatImage(img_filepaths[i]);
+    keypoints[i] = new std::vector<theia::Keypoint>();
+    descriptors[i] = new std::vector<Eigen::VectorXf>();
+
+    sift_extractor.DetectAndExtractDescriptors(*images[i],
+                                               keypoints[i],
+                                               descriptors[i]);
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now() - start);
     time_to_read_images += duration.count();
-    LOG(INFO) << "Extracted " << descriptors[i].size()
+    LOG(INFO) << "Extracted " << descriptors[i]->size()
               << " features for image: " << img_filepaths[i];
   }
 
@@ -101,17 +105,21 @@ int main(int argc, char *argv[]) {
     theia::ImageCanvas image_canvas;
     const int img1_index = image_pair_matches[i].image1_ind;
     const int img2_index = image_pair_matches[i].image2_ind;
-    image_canvas.AddImage(images[img1_index]);
-    image_canvas.AddImage(images[img2_index]);
+    image_canvas.AddImage(*images[img1_index]);
+    image_canvas.AddImage(*images[img2_index]);
     const std::string match_output = theia::StringPrintf(
         "%s/matches_%i_%i.png",
         FLAGS_img_output_dir.c_str(),
         img1_index,
         img2_index);
-    image_canvas.DrawMatchedFeatures(0, keypoints[img1_index],
-                                     1, keypoints[img2_index],
+    image_canvas.DrawMatchedFeatures(0, *keypoints[img1_index],
+                                     1, *keypoints[img2_index],
                                      image_pair_matches[i].matches,
                                      0.1);
     image_canvas.Write(match_output);
   }
+
+  theia::STLDeleteElements(&images);
+  theia::STLDeleteElements(&keypoints);
+  theia::STLDeleteElements(&descriptors);
 }

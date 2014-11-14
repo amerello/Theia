@@ -145,6 +145,8 @@ void CascadeHasher::BuildBuckets(HashedImage* hashed_image) const {
 void CascadeHasher::CreateHashedSiftDescriptors(
     const std::vector<Eigen::VectorXf>& sift_desc,
     HashedImage* hashed_image) const {
+  CHECK_NOTNULL(hashed_image);
+
   ConvertToZeroMeanDescriptor(sift_desc, &hashed_image->hashed_desc);
 
   // Allocate space for hash codes and bucket ids.
@@ -172,6 +174,7 @@ void CascadeHasher::MatchImages(const HashedImage& hashed_image1,
 
   for (int i = 0; i < hashed_image1.hashed_desc.size(); i++) {
     const auto& hashed_desc = hashed_image1.hashed_desc[i];
+    CHECK_GT(hashed_desc.bucket_ids.size(), 0);
 
     // Accumulate all descriptors in each bucket group that are in the same
     // bucket id as the query descriptor.

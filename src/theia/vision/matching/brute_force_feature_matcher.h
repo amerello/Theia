@@ -69,12 +69,12 @@ class BruteForceFeatureMatcher : public FeatureMatcher<DistanceMetric> {
    bool MatchAllPairs(
        const FeatureMatcherOptions& options,
        const int num_threads,
-       const std::vector<std::vector<DescriptorType> >& descriptors,
+       const std::vector<std::vector<DescriptorType>* >& descriptors,
        std::vector<ImagePairMatch>* image_pair_matches);
 
  private:
   void MatchWithMutex(
-    const std::vector<std::vector<DescriptorType> >&
+    const std::vector<std::vector<DescriptorType>* >&
         descriptors,
     const FeatureMatcherOptions& options,
     const int desc1_index,
@@ -123,7 +123,7 @@ bool BruteForceFeatureMatcher<DistanceMetric>::Match(
 
 template <class DistanceMetric>
 void BruteForceFeatureMatcher<DistanceMetric>::MatchWithMutex(
-    const std::vector<std::vector<DescriptorType> >&
+    const std::vector<std::vector<DescriptorType>* >&
         descriptors,
     const FeatureMatcherOptions& options,
     const int desc1_index,
@@ -134,8 +134,8 @@ void BruteForceFeatureMatcher<DistanceMetric>::MatchWithMutex(
   image_pair_match.image1_ind = desc1_index;
   image_pair_match.image2_ind = desc2_index;
   CHECK(Match(options,
-              descriptors[desc1_index],
-              descriptors[desc2_index],
+              *descriptors[desc1_index],
+              *descriptors[desc2_index],
               &image_pair_match.matches));
   // Lock mutex.
   matcher_mutex->lock();
@@ -149,7 +149,7 @@ template <class DistanceMetric>
 bool BruteForceFeatureMatcher<DistanceMetric>::MatchAllPairs(
     const FeatureMatcherOptions& options,
     const int num_threads,
-    const std::vector<std::vector<DescriptorType> >& descriptors,
+    const std::vector<std::vector<DescriptorType>* >& descriptors,
     std::vector<ImagePairMatch>* image_pair_matches) {
   CHECK_NOTNULL(image_pair_matches)->clear();
   image_pair_matches->reserve(descriptors.size() * descriptors.size() / 2);

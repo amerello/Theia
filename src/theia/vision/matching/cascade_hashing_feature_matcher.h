@@ -64,18 +64,18 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
   bool MatchAllPairs(
       const FeatureMatcherOptions& options,
       const int num_threads,
-      const std::vector<std::vector<Eigen::VectorXf> >& descriptors,
+      const std::vector<std::vector<Eigen::VectorXf>* >& descriptors,
       std::vector<ImagePairMatch>* image_pair_matches);
 
  private:
   void MatchWithMutex(
-    const std::vector<HashedImage>& descriptors,
-    const FeatureMatcherOptions& options,
-    const int thread_id,
-    const int num_threads,
-    std::mutex* matcher_mutex,
-    CascadeHasher* hasher,
-    std::vector<ImagePairMatch>* image_pair_matches);
+      const std::vector<HashedImage*>& descriptors,
+      const FeatureMatcherOptions& options,
+      const int thread_id,
+      const int num_threads,
+      std::mutex* matcher_mutex,
+      CascadeHasher* hasher,
+      std::vector<ImagePairMatch>* image_pair_matches);
 
   DISALLOW_COPY_AND_ASSIGN(CascadeHashingFeatureMatcher);
 };

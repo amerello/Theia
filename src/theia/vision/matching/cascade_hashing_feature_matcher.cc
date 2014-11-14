@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "theia/util/threadpool.h"
+#include "theia/util/util.h"
 #include "theia/vision/matching/cascade_hasher.h"
 #include "theia/vision/matching/feature_matcher.h"
 #include "theia/vision/matching/feature_matcher_utils.h"
@@ -84,18 +85,21 @@ bool CascadeHashingFeatureMatcher::Match(
 }
 
 void CascadeHashingFeatureMatcher::MatchWithMutex(
-    const std::vector<HashedImage>& descriptors,
+    const std::vector<HashedImage*>& descriptors,
     const FeatureMatcherOptions& options,
     const int desc1_index,
     const int desc2_index,
     std::mutex* matcher_mutex,
     CascadeHasher* hasher,
     std::vector<ImagePairMatch>* image_pair_matches) {
+  CHECK_NOTNULL(descriptors[desc1_index]);
+  CHECK_NOTNULL(descriptors[desc2_index]);
+
   ImagePairMatch image_pair_match;
   image_pair_match.image1_ind = desc1_index;
   image_pair_match.image2_ind = desc2_index;
-  hasher->MatchImages(descriptors[desc1_index],
-                      descriptors[desc2_index],
+  hasher->MatchImages(*descriptors[desc1_index],
+                      *descriptors[desc2_index],
                       options.lowes_ratio,
                       &image_pair_match.matches);
   // Lock mutex.
@@ -109,7 +113,7 @@ void CascadeHashingFeatureMatcher::MatchWithMutex(
 bool CascadeHashingFeatureMatcher::MatchAllPairs(
       const FeatureMatcherOptions& options,
       const int num_threads,
-      const std::vector<std::vector<Eigen::VectorXf> >& descriptors,
+      const std::vector<std::vector<Eigen::VectorXf>* >& descriptors,
       std::vector<ImagePairMatch>* image_pair_matches) {
   CHECK_NOTNULL(image_pair_matches)->clear();
   image_pair_matches->reserve(descriptors.size() * descriptors.size() / 2);
@@ -117,26 +121,36 @@ bool CascadeHashingFeatureMatcher::MatchAllPairs(
   CascadeHasher hasher;
   CHECK(hasher.Initialize());
 
-  std::vector<HashedImage> hashed_images(descriptors.size());
+  std::vector<HashedImage*> hashed_images(descriptors.size());
   for (int i = 0; i < hashed_images.size(); i++) {
-    hasher.CreateHashedSiftDescriptors(descriptors[i], &hashed_images[i]);
+    CHECK_NOTNULL(descriptors[i]);
+    hashed_images[i] = new HashedImage();
+    hasher.CreateHashedSiftDescriptors(*descriptors[i], hashed_images[i]);
   }
 
   std::mutex mutex_lock;
-  ThreadPool pool(num_threads);
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
   for (int i = 0; i < descriptors.size(); i++) {
     for (int j = i + 1; j < descriptors.size(); j++) {
-      pool.Add(&CascadeHashingFeatureMatcher::MatchWithMutex,
-               this,
-               hashed_images,
-               options,
-               i,
-               j,
-               &mutex_lock,
-               &hasher,
-               image_pair_matches);
+      pool->Add(&CascadeHashingFeatureMatcher::MatchWithMutex,
+                this,
+                hashed_images,
+                options,
+                i,
+                j,
+                &mutex_lock,
+                &hasher,
+                image_pair_matches);
     }
   }
+
+  // This forces all threads in the thread pool to finish before deleting the
+  // hashed images.
+  pool.reset(nullptr);
+
+  // Delete HashedImages that were allocated.
+  STLDeleteElements(&hashed_images);
+
   return true;
 }
 

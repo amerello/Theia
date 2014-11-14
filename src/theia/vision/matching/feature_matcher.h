@@ -91,7 +91,7 @@ template <class DistanceMetric> class FeatureMatcher {
   virtual bool MatchAllPairs(
       const FeatureMatcherOptions& options,
       const int num_threads,
-      const std::vector<std::vector<DescriptorType> >& descriptors,
+      const std::vector<std::vector<DescriptorType>* >& descriptors,
       std::vector<ImagePairMatch>* image_pair_matches)  = 0;
 
  private:
