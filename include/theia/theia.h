@@ -81,6 +81,7 @@
 #include "theia/util/map_util.h"
 #include "theia/util/random.h"
 #include "theia/util/stringprintf.h"
+#include "theia/util/threadpool.h"
 #include "theia/util/util.h"
 #include "theia/vision/matching/brute_force_feature_matcher.h"
 #include "theia/vision/matching/cascade_hasher.h"

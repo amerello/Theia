@@ -59,6 +59,7 @@ SET(THEIA_SRC
   util/filesystem.cc
   util/random.cc
   util/stringprintf.cc
+  util/threadpool.cc
   vision/matching/feature_matcher_utils.cc
   vision/matching/cascade_hasher.cc
   vision/matching/cascade_hashing_feature_matcher.cc
