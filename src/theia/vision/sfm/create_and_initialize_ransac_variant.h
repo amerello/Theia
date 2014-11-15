@@ -47,7 +47,7 @@ namespace theia {
 // NOTE: Prosac requires correspondences to be sorted by the descriptor
 // distances with the best match first. See theia/solvers for more information
 // on the various types.
-enum RansacType {
+enum class RansacType {
   RANSAC = 0,
   PROSAC = 1,
   // TODO(cmsweeney): Arrsac does not seem to work very fast...

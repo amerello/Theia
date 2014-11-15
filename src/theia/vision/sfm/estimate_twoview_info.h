@@ -47,7 +47,7 @@ class View;
 // Options for estimating two view infos.
 struct EstimateTwoViewInfoOptions {
   // Type of Ransac variant to use.
-  RansacType ransac_type = RANSAC;
+  RansacType ransac_type = RansacType::RANSAC;
 
   // Minimum number of points that can be successfully triangulated in order to
   // produce a valid two view info.
