@@ -73,6 +73,7 @@ SET(THEIA_SRC
   vision/sfm/estimators/fundamental_matrix_estimator.cc
   vision/sfm/estimators/relative_pose_estimator.cc
   vision/sfm/estimators/uncalibrated_relative_pose_estimator.cc
+  vision/sfm/features_and_metadata_extractor.cc
   vision/sfm/model.cc
   vision/sfm/pose/dls_impl.cc
   vision/sfm/pose/dls_pnp.cc

@@ -103,6 +103,7 @@
 #include "theia/vision/sfm/estimators/uncalibrated_relative_pose_estimator.h"
 #include "theia/vision/sfm/feature.h"
 #include "theia/vision/sfm/feature_correspondence.h"
+#include "theia/vision/sfm/features_and_metadata_extractor.h"
 #include "theia/vision/sfm/model.h"
 #include "theia/vision/sfm/pose/dls_impl.h"
 #include "theia/vision/sfm/pose/dls_pnp.h"
