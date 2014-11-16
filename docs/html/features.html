@@ -159,7 +159,11 @@
             
   <div class="section" id="features">
 <span id="documentation-features"></span><h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
-<p>Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscal images if necessary.</p>
+<p>Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscale images if necessary.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The keypoint detection and descriptor extraction methods here are generally not thread-safe. Use with caution when multi-threading.</p>
+</div>
 <div class="section" id="keypoints">
 <h2>Keypoints<a class="headerlink" href="#keypoints" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
@@ -339,13 +343,35 @@ bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">Co
 <dl class="function">
 <dt id="DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P">
 bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">ComputeDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::BinaryVectorXf&gt;* <em>binary_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute many descriptors simultaneous from the input keypoints. Note that
-note all keypoints are guaranteed to result in a descriptor. Only valid
-descriptors (and feature positions) are returned in the output parameters.</p>
+<dd><p>Compute many descriptors from the input keypoints. Note that not all
+keypoints are guaranteed to result in a descriptor. Only valid descriptors
+(and feature positions) are returned in the output parameters.</p>
 <p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
 <p><tt class="docutils literal"><span class="pre">keypoints</span></tt>: An input vector of the keypoint pointers that will have
 descriptors extracted. Keypoints that were not able to have a descriptor
 extracted are removed.</p>
+<p><tt class="docutils literal"><span class="pre">float_descriptors</span> <span class="pre">or</span> <span class="pre">binary_descriptors</span></tt>: A container for the descriptors
+that have been created based on the type of descriptor that is being
+extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
+SIFT) while Eigen::BinaryVectorX is used for float descriptors.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">DetectAndExtractDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::VectorXf&gt;* <em>float_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">DetectAndExtractDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::BinaryVectorXf&gt;* <em>binary_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detects keypoints and extracts descriptors using the default keypoint
+detector for the corresponding descriptor. For SIFT, this is the SIFT
+keypoint detector, and for BRIEF, BRISK, and FREAK this is the BRISK
+keypoint detector. This has the potential to be faster because it may avoid
+recomputing certain member variables.</p>
+<p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
+<p><tt class="docutils literal"><span class="pre">keypoints</span></tt>: An output vector of the keypoint pointers that have been
+detected and successfully had descriptors extracted.</p>
 <p><tt class="docutils literal"><span class="pre">float_descriptors</span> <span class="pre">or</span> <span class="pre">binary_descriptors</span></tt>: A container for the descriptors
 that have been created based on the type of descriptor that is being
 extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,

@@ -8,7 +8,9 @@
 Features
 ========
 
-Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscal images if necessary.
+Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscale images if necessary.
+
+.. NOTE:: The keypoint detection and descriptor extraction methods here are generally not thread-safe. Use with caution when multi-threading.
 
 Keypoints
 =========
@@ -172,15 +174,34 @@ DescriptorExtractor
   .. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
   .. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
 
-    Compute many descriptors simultaneous from the input keypoints. Note that
-    note all keypoints are guaranteed to result in a descriptor. Only valid
-    descriptors (and feature positions) are returned in the output parameters.
+    Compute many descriptors from the input keypoints. Note that not all
+    keypoints are guaranteed to result in a descriptor. Only valid descriptors
+    (and feature positions) are returned in the output parameters.
 
     ``input_image``: The image that you want to detect keypoints on.
 
     ``keypoints``: An input vector of the keypoint pointers that will have
     descriptors extracted. Keypoints that were not able to have a descriptor
     extracted are removed.
+
+    ``float_descriptors or binary_descriptors``: A container for the descriptors
+    that have been created based on the type of descriptor that is being
+    extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
+    SIFT) while Eigen::BinaryVectorX is used for float descriptors.
+
+  .. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
+  .. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
+
+    Detects keypoints and extracts descriptors using the default keypoint
+    detector for the corresponding descriptor. For SIFT, this is the SIFT
+    keypoint detector, and for BRIEF, BRISK, and FREAK this is the BRISK
+    keypoint detector. This has the potential to be faster because it may avoid
+    recomputing certain member variables.
+
+    ``input_image``: The image that you want to detect keypoints on.
+
+    ``keypoints``: An output vector of the keypoint pointers that have been
+    detected and successfully had descriptors extracted.
 
     ``float_descriptors or binary_descriptors``: A container for the descriptors
     that have been created based on the type of descriptor that is being
