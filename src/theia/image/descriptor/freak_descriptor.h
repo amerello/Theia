@@ -78,6 +78,11 @@ class FreakDescriptorExtractor : public BinaryDescriptorExtractor {
                           std::vector<Keypoint>* keypoints,
                           std::vector<Eigen::BinaryVectorX>* descriptors);
 
+  bool DetectAndExtractDescriptors(
+    const FloatImage& image,
+    std::vector<Keypoint>* keypoints,
+    std::vector<Eigen::BinaryVectorX>* descriptors);
+
  private:
   uchar MeanIntensity(const Image<uchar>& image, const Image<uchar>& integral,
                       const float kp_x, const float kp_y,

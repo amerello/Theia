@@ -72,6 +72,8 @@ class SiftDescriptorExtractor : public FloatDescriptorExtractor {
                           std::vector<Keypoint>* keypoints,
                           std::vector<Eigen::VectorXf>* descriptors);
 
+  // Detect keypoints using the Sift keypoint detector and extracts them at the
+  // same time.
   bool DetectAndExtractDescriptors(
       const FloatImage& image,
       std::vector<Keypoint>* keypoints,

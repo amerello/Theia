@@ -47,25 +47,9 @@ DEFINE_string(
 DEFINE_string(img_output_dir, ".", "Name of output image file.");
 DEFINE_int32(num_threads, 1,
              "Number of threads to use for feature extraction and matching.");
-DEFINE_string(keypoint_detector, "SIFT",
-              "Type of keypoint detector to use. Must be one of the following: "
-              "SIFT, AGAST, BRISK");
 DEFINE_string(descriptor, "SIFT",
               "Type of feature descriptor to use. Must be one of the following: "
               "SIFT, BRIEF, BRISK, FREAK");
-
-theia::KeypointDetectorType GetKeypointDetectorType(const std::string& detector) {
-  if (detector == "SIFT") {
-    return theia::KeypointDetectorType::SIFT;
-  } else if (detector == "AGAST") {
-    return theia::KeypointDetectorType::AGAST;
-  } else if (detector == "BRISK") {
-    return theia::KeypointDetectorType::BRISK;
-  } else {
-    LOG(ERROR) << "Invalid Keypoint Detector specified. Using SIFT instead.";
-    return theia::KeypointDetectorType::SIFT;
-  }
-}
 
 theia::DescriptorExtractorType GetDescriptorExtractorType(
     const std::string& descriptor) {
@@ -91,11 +75,9 @@ int main(int argc, char *argv[]) {
   std::vector<std::string> img_filepaths;
   CHECK(theia::GetFilepathsFromWildcard(FLAGS_input_imgs, &img_filepaths));
 
-  const auto& keypoint_type = GetKeypointDetectorType(FLAGS_keypoint_detector);
   const auto& descriptor_type = GetDescriptorExtractorType(FLAGS_descriptor);
 
-  theia::FeaturesAndMetadataExtractor feature_extractor(keypoint_type,
-                                                        descriptor_type);
+  theia::FeaturesAndMetadataExtractor feature_extractor(descriptor_type);
   std::vector<std::vector<theia::Keypoint>* > keypoints;
   std::vector<std::vector<Eigen::VectorXf>* > descriptors;
   std::vector<std::vector<Eigen::BinaryVectorX>* > binary_descriptors;

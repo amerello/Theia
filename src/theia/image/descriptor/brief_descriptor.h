@@ -86,6 +86,11 @@ class BriefDescriptorExtractor : public BinaryDescriptorExtractor {
       std::vector<Keypoint>* keypoints,
       std::vector<Eigen::BinaryVectorX>* descriptors);
 
+  bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::BinaryVectorX>* descriptors);
+
   const std::vector<BriefSamplePair>& SamplePairs() const;
 
  private:

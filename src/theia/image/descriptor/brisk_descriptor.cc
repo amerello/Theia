@@ -536,6 +536,18 @@ bool BriskDescriptorExtractor::ComputeDescriptors(
   return true;
 }
 
+bool BriskDescriptorExtractor::DetectAndExtractDescriptors(
+    const FloatImage& image,
+    std::vector<Keypoint>* keypoints,
+    std::vector<Eigen::BinaryVectorX>* descriptors) {
+  BriskDetector detector;
+  if (!detector.DetectKeypoints(image, keypoints)) {
+    return false;
+  }
+
+  return this->ComputeDescriptors(image, keypoints, descriptors);
+}
+
 BriskDescriptorExtractor::~BriskDescriptorExtractor() {
   delete[] pattern_points_;
   delete[] short_pairs_;

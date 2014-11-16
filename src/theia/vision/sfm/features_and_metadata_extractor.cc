@@ -44,33 +44,8 @@
 #include "theia/image/descriptor/freak_descriptor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
-#include "theia/image/keypoint_detector/agast_detector.h"
-#include "theia/image/keypoint_detector/brisk_detector.h"
-#include "theia/image/keypoint_detector/keypoint_detector.h"
-#include "theia/image/keypoint_detector/sift_detector.h"
 
 namespace theia {
-
-std::unique_ptr<KeypointDetector>
-FeaturesAndMetadataExtractor::CreateKeypointDetector() {
-  std::unique_ptr<KeypointDetector> keypoint_detector;
-  switch (keypoint_detector_type_) {
-    case KeypointDetectorType::SIFT:
-      keypoint_detector.reset(new SiftDetector);
-      break;
-    case KeypointDetectorType::AGAST:
-      keypoint_detector.reset(new AgastDetector);
-      break;
-    case KeypointDetectorType::BRISK:
-      keypoint_detector.reset(new BriskDetector);
-      break;
-    default:
-      LOG(ERROR) << "Invalid Keypoint Detector specified.";
-  }
-  CHECK(keypoint_detector->Initialize())
-      << "Could not initialize Keypoint Detector";
-  return keypoint_detector;
-}
 
 std::unique_ptr<DescriptorExtractor>
 FeaturesAndMetadataExtractor::CreateDescriptorExtractor() {

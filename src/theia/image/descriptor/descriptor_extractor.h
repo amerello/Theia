@@ -94,6 +94,21 @@ class DescriptorExtractor {
       std::vector<Keypoint>* keypoints,
       std::vector<Eigen::BinaryVectorX>* descriptors);
 
+
+  // Detects keypoints using the default method for the given descriptor. This
+  // can be more efficient (e.g., with SIFT) because there is some overhead
+  // required for creating the keypoint and descriptor objects.
+  virtual bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::VectorXf>* descriptors) = 0;
+
+  // Same as above but binary descriptors
+  virtual bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::BinaryVectorX>* descriptors) = 0;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(DescriptorExtractor);
 };
@@ -138,6 +153,24 @@ class FloatDescriptorExtractor : public DescriptorExtractor {
       std::vector<Keypoint>* keypoints,
       std::vector<Eigen::BinaryVectorX>* descriptors) {
     LOG(FATAL) << "YOU ARE ATTEMPTING TO EXTRACT A BINARY DESCRIPTOR WITH A "
+                  "FLOAT DESCRIPTOR EXTRACTOR";
+    return false;
+  }
+
+  // Detects keypoints using the default method for the given descriptor. This
+  // can be more efficient (e.g., with SIFT) because there is some overhead
+  // required for creating the keypoint and descriptor objects.
+  virtual bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::VectorXf>* descriptors) = 0;
+
+  // Same as above but binary descriptors
+  bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::BinaryVectorX>* descriptors) {
+        LOG(FATAL) << "YOU ARE ATTEMPTING TO EXTRACT A BINARY DESCRIPTOR WITH A "
                   "FLOAT DESCRIPTOR EXTRACTOR";
     return false;
   }
@@ -188,6 +221,24 @@ class BinaryDescriptorExtractor : public DescriptorExtractor {
     return DescriptorExtractor::ComputeDescriptors(
         image, keypoints, descriptors);
   }
+
+  // Detects keypoints using the default method for the given descriptor. This
+  // can be more efficient (e.g., with SIFT) because there is some overhead
+  // required for creating the keypoint and descriptor objects.
+  bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::VectorXf>* descriptors) {
+    LOG(FATAL) << "YOU ARE ATTEMPTING TO EXTRACT A FLOAT DESCRIPTOR WITH A "
+                  "BINARY DESCRIPTOR EXTRACTOR";
+    return false;
+  }
+
+  // Same as above but binary descriptors
+  virtual bool DetectAndExtractDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::BinaryVectorX>* descriptors) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(BinaryDescriptorExtractor);

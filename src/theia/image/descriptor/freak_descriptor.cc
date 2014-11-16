@@ -83,6 +83,7 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/image/image.h"
+#include "theia/image/keypoint_detector/brisk_detector.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/util/util.h"
 
@@ -533,6 +534,19 @@ bool FreakDescriptorExtractor::ComputeDescriptors(
   }
   return true;
 }
+
+bool FreakDescriptorExtractor::DetectAndExtractDescriptors(
+    const FloatImage& image,
+    std::vector<Keypoint>* keypoints,
+    std::vector<Eigen::BinaryVectorX>* descriptors) {
+  BriskDetector detector;
+  if (!detector.DetectKeypoints(image, keypoints)) {
+    return false;
+  }
+
+  return this->ComputeDescriptors(image, keypoints, descriptors);
+}
+
 
 // Simply take average on a square patch, not evengaussian approx.
 uchar FreakDescriptorExtractor::MeanIntensity(

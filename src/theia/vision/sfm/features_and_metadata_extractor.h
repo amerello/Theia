@@ -43,21 +43,16 @@
 #include "theia/alignment/alignment.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/image.h"
-#include "theia/image/keypoint_detector/keypoint_detector.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
 #include "theia/vision/sfm/view_metadata.h"
 
 namespace theia {
 
-// The various types of keypoint detectors and feature descriptors you can
-// choose.
-enum class KeypointDetectorType {
-  SIFT = 0,
-  AGAST = 1,
-  BRISK = 2,
-};
-
+// The various types of feature descriptors you can choose. We use the default
+// keypoint extractor for each feature type. Since this is a convenience class
+// anyways, this functionality is acceptable. If more flexibility (custom
+// features and custom descriptors) is needed then a new class may be developed.
 enum class DescriptorExtractorType {
   SIFT = 0,
   BRIEF = 1,
@@ -71,10 +66,8 @@ enum class DescriptorExtractorType {
 class FeaturesAndMetadataExtractor {
  public:
   FeaturesAndMetadataExtractor(
-      const KeypointDetectorType& keypoint_detector_type,
       const DescriptorExtractorType& descriptor_extractor_type)
-      : keypoint_detector_type_(keypoint_detector_type),
-        descriptor_extractor_type_(descriptor_extractor_type) {}
+      : descriptor_extractor_type_(descriptor_extractor_type) {}
   ~FeaturesAndMetadataExtractor() {}
 
   // Method to extract descriptors and metadata. Descriptors must be a float
@@ -95,11 +88,9 @@ class FeaturesAndMetadataExtractor {
                                   std::vector<DescriptorType>* descriptors,
                                   ViewMetadata* view_metadata);
 
-  // Factory methods to create the keypoint detector and descriptor extractor.
-  std::unique_ptr<KeypointDetector> CreateKeypointDetector();
+  // Factory method to create the keypoint detector and descriptor extractor.
   std::unique_ptr<DescriptorExtractor> CreateDescriptorExtractor();
 
-  const KeypointDetectorType keypoint_detector_type_;
   const DescriptorExtractorType descriptor_extractor_type_;
 
   DISALLOW_COPY_AND_ASSIGN(FeaturesAndMetadataExtractor);
@@ -153,21 +144,15 @@ bool FeaturesAndMetadataExtractor::ExtractFeaturesAndMetadata(
   // object so that they can be thread-safe. We *should* be able to use the
   // static thread_local keywords, but apparently Mac OS-X's version of clang
   // does not actually support it!
-  std::unique_ptr<KeypointDetector> keypoint_detector =
-      CreateKeypointDetector();
+  //
+  // TODO(cmsweeney): Change this so that each thread in the threadpool receives
+  // exactly one object.
   std::unique_ptr<DescriptorExtractor> descriptor_extractor =
       CreateDescriptorExtractor();
 
-  // Exit if the keypoint detection fails.
-  if (!keypoint_detector->DetectKeypoints(img, keypoints)) {
-    LOG(ERROR) << "Could not detect keypoints in image " << filename;
-    return false;
-  }
-
   // Exit if the descriptor extraction fails.
-  if (!descriptor_extractor->ComputeDescriptors(img,
-                                                keypoints,
-                                                descriptors)) {
+  if (!descriptor_extractor->DetectAndExtractDescriptors(
+          img, keypoints, descriptors)) {
     LOG(ERROR) << "Could not extract descriptors in image " << filename;
     return false;
   }

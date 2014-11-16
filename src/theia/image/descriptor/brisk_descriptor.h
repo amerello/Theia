@@ -40,6 +40,7 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
+#include "theia/image/keypoint_detector/brisk_detector.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/util/util.h"
 
@@ -68,6 +69,13 @@ class BriskDescriptorExtractor : public BinaryDescriptorExtractor {
 
   // Compute multiple descriptors for keypoints from a single image.
   bool ComputeDescriptors(
+      const FloatImage& image,
+      std::vector<Keypoint>* keypoints,
+      std::vector<Eigen::BinaryVectorX>* descriptors);
+
+  // Detect keypoints using the Sift keypoint detector and extracts them at the
+  // same time.
+  bool DetectAndExtractDescriptors(
       const FloatImage& image,
       std::vector<Keypoint>* keypoints,
       std::vector<Eigen::BinaryVectorX>* descriptors);
