@@ -200,7 +200,7 @@ DescriptorExtractor
 
     ``input_image``: The image that you want to detect keypoints on.
 
-    ``keypoints``: An output vector of the keypoint pointers that have been
+    ``keypoints``: An output vector of the keypoint points that have been
     detected and successfully had descriptors extracted.
 
     ``float_descriptors or binary_descriptors``: A container for the descriptors
