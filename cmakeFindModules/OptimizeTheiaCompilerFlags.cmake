@@ -129,7 +129,12 @@ macro(OptimizeTheiaCompilerFlags)
 
   # Set c++ standard to c++11
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+      # Mac OS X before Mavericks uses libstdc++ by default but does not support
+      # c++11. Force it to use libc++.
+      IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+      ENDIF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
   else()
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
     if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
