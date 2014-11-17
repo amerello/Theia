@@ -46,6 +46,16 @@ namespace theia {
 bool GetFilepathsFromWildcard(const std::string& filepath_with_wildcard,
                               std::vector<std::string>* filepaths);
 
+// Extracts the filename from the filepath (i.e., removes all directory
+// information). If with_extension is set to true then the extension is kept and
+// output with the filename, otherwise the extension is removed.
+bool GetFilenameFromFilepath(const std::string& filepath,
+                             const bool with_extension,
+                             std::string* filename);
+
+// Returns true if the file exists, false otherwise.
+bool FileExists(const std::string& filename);
+
 }  // namespace theia
 
 #endif  // THEIA_UTIL_FILESYSTEM_H_

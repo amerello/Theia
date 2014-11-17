@@ -72,4 +72,22 @@ bool GetFilepathsFromWildcard(
   return true;
 }
 
+bool GetFilenameFromFilepath(const std::string& filepath,
+                             const bool with_extension,
+                             std::string* filename) {
+  CHECK_NOTNULL(filename)->clear();
+
+  if (with_extension) {
+    *filename = stlplus::filename_part(filepath);
+  } else {
+    *filename = stlplus::basename_part(filepath);
+  }
+
+  return filename->length() > 0;
+}
+
+bool FileExists(const std::string& filename) {
+  return stlplus::file_exists(filename);
+}
+
 }  // namespace theia
