@@ -100,7 +100,7 @@ macro(OptimizeTheiaCompilerFlags)
       ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
       # Mac OS X
       IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        SET (THEIA_CXX_FLAGS "${THEIA_CXX_FLAGS} -mssse3")
+        SET (THEIA_CXX_FLAGS "${THEIA_CXX_FLAGS} -msse3")
         # Use of -fast only applicable for Apple's GCC
         # Assume this is being used if GCC version < 4.3 on OSX
         EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER}

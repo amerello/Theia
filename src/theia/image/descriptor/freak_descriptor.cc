@@ -69,10 +69,6 @@
 #include "theia/image/descriptor/freak_descriptor.h"
 
 #define _USE_MATH_DEFINES
-#ifdef THEIA_USE_SSE
-#include <emmintrin.h>
-#include <tmmintrin.h>
-#endif
 #include <glog/logging.h>
 #include <stdint.h>
 
@@ -458,63 +454,6 @@ bool FreakDescriptorExtractor::ComputeDescriptors(
           keypoints->at(k).y(), kp_scale_idx[k], theta_idx, i);
     }
 
-#ifdef THEIA_USE_SSE
-    __m128i* ptr = reinterpret_cast<__m128i*>(freak_descriptor.data());
-    // NOTE: the comparisons order is modified in each block (but first
-    // 128 comparisons remain globally the same-->does not affect the
-    // 128,384 bits segmanted matching strategy)
-    int cnt = 0;
-    for (int n = kNumPairs / 128; n--;) {
-      __m128i result128 = _mm_setzero_si128();
-      for (int m = 128 / 16; m--; cnt += 16) {
-        __m128i operand1 =
-            _mm_set_epi8(points_value[description_pairs_[cnt + 0].i],
-                         points_value[description_pairs_[cnt + 1].i],
-                         points_value[description_pairs_[cnt + 2].i],
-                         points_value[description_pairs_[cnt + 3].i],
-                         points_value[description_pairs_[cnt + 4].i],
-                         points_value[description_pairs_[cnt + 5].i],
-                         points_value[description_pairs_[cnt + 6].i],
-                         points_value[description_pairs_[cnt + 7].i],
-                         points_value[description_pairs_[cnt + 8].i],
-                         points_value[description_pairs_[cnt + 9].i],
-                         points_value[description_pairs_[cnt + 10].i],
-                         points_value[description_pairs_[cnt + 11].i],
-                         points_value[description_pairs_[cnt + 12].i],
-                         points_value[description_pairs_[cnt + 13].i],
-                         points_value[description_pairs_[cnt + 14].i],
-                         points_value[description_pairs_[cnt + 15].i]);
-
-        __m128i operand2 =
-            _mm_set_epi8(points_value[description_pairs_[cnt + 0].j],
-                         points_value[description_pairs_[cnt + 1].j],
-                         points_value[description_pairs_[cnt + 2].j],
-                         points_value[description_pairs_[cnt + 3].j],
-                         points_value[description_pairs_[cnt + 4].j],
-                         points_value[description_pairs_[cnt + 5].j],
-                         points_value[description_pairs_[cnt + 6].j],
-                         points_value[description_pairs_[cnt + 7].j],
-                         points_value[description_pairs_[cnt + 8].j],
-                         points_value[description_pairs_[cnt + 9].j],
-                         points_value[description_pairs_[cnt + 10].j],
-                         points_value[description_pairs_[cnt + 11].j],
-                         points_value[description_pairs_[cnt + 12].j],
-                         points_value[description_pairs_[cnt + 13].j],
-                         points_value[description_pairs_[cnt + 14].j],
-                         points_value[description_pairs_[cnt + 15].j]);
-        // Emulated "not less than" for 8-bit UNSIGNED integers.
-        __m128i workReg = _mm_min_epu8(operand1, operand2);
-        // Emulated "not less than" for 8-bit UNSIGNED integers.
-        workReg = _mm_cmpeq_epi8(workReg, operand2);
-        // Merge the last 16 bits with the 128bits std::vector until full.
-        workReg = _mm_and_si128(
-            _mm_set1_epi16(static_cast<int16_t>(0x8080 >> m)), workReg);
-        result128 = _mm_or_si128(result128, workReg);
-      }
-      (*ptr) = result128;
-      ++ptr;
-    }
-#else
     std::bitset<512>* freak_bitset =
         reinterpret_cast<std::bitset<512>*>(freak_descriptor.data());
     // Extracting descriptor preserving the order of SSE version.
@@ -528,8 +467,6 @@ bool FreakDescriptorExtractor::ComputeDescriptors(
         }
       }
     }
-#endif  // THEIA_USE_SSE
-
     descriptors->push_back(freak_descriptor);
   }
   return true;

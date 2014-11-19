@@ -42,9 +42,6 @@
 #include <glog/logging.h>
 #include <Eigen/Core>
 #include <stdlib.h>
-#ifdef THEIA_USE_SSE
-#include <tmmintrin.h>
-#endif
 
 #include <algorithm>
 
