@@ -214,7 +214,7 @@ macro(OptimizeTheiaCompilerFlags)
     IF (CMAKE_COMPILER_IS_GNUCXX)
       # Linux
       IF (NOT GCC_VERSION VERSION_LESS 4.8)
-        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comment -Wno-unused-variable -Wno-unused-result -Wno-unused-but-set-variable")
+        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comment -Wno-unused-variable -Wno-unused-result -Wno-unused-but-set-variable -Wno-unused-local-typedefs -Wno-maybe-uninitialized")
       ENDIF (NOT GCC_VERSION VERSION_LESS 4.8)
     ENDIF (CMAKE_COMPILER_IS_GNUCXX)
   ENDIF (UNIX)
