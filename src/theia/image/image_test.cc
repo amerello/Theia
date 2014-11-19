@@ -144,7 +144,7 @@ TEST(Image, ConvertToRGBImage) {
 
 TEST(Image, FocalLengthEXIF) {
   FloatImage exif_img(exif_img_filename);
-  double focal_length;
+  double focal_length = 0;
   EXPECT_TRUE(exif_img.FocalLengthPixels(&focal_length));
   EXPECT_NEAR(focal_length, 1304.84, 0.1);
 }
