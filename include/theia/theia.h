@@ -91,6 +91,7 @@
 #include "theia/vision/matching/feature_matcher_options.h"
 #include "theia/vision/matching/feature_matcher_utils.h"
 #include "theia/vision/sfm/camera/camera.h"
+#include "theia/vision/sfm/camera/camera_intrinsics.h"
 #include "theia/vision/sfm/camera/project_point_to_image.h"
 #include "theia/vision/sfm/camera/projection_matrix_utils.h"
 #include "theia/vision/sfm/camera/radial_distortion.h"

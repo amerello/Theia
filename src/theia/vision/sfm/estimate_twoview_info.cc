@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/vision/sfm/camera/camera_intrinsics.h"
 #include "theia/vision/sfm/estimators/estimate_relative_pose.h"
 #include "theia/vision/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/vision/sfm/estimators/relative_pose_estimator.h"
@@ -50,7 +51,6 @@
 #include "theia/vision/sfm/triangulation/triangulation.h"
 #include "theia/vision/sfm/twoview_info.h"
 #include "theia/vision/sfm/types.h"
-#include "theia/vision/sfm/view.h"
 
 namespace theia {
 
@@ -78,15 +78,15 @@ int NumTriangulatedFeatures(
 
 bool EstimateTwoViewInfoCalibrated(
     const EstimateTwoViewInfoOptions& options,
-    const View& view1,
-    const View& view2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
   // Normalize features w.r.t focal length.
   std::vector<FeatureCorrespondence> normalized_correspondences;
-  NormalizeFeatures(view1.Camera(),
-                    view2.Camera(),
+  NormalizeFeatures(intrinsics1,
+                    intrinsics2,
                     correspondences,
                     &normalized_correspondences);
 
@@ -97,8 +97,7 @@ bool EstimateTwoViewInfoCalibrated(
   ransac_options.max_iterations = options.max_ransac_iterations;
   ransac_options.error_thresh =
       options.max_sampson_error_pixels * options.max_sampson_error_pixels /
-      (view1.Metadata().focal_length.value *
-       view2.Metadata().focal_length.value);
+      (intrinsics1.focal_length * intrinsics2.focal_length);
   ransac_options.use_mle = options.use_mle;
 
   RelativePose relative_pose;
@@ -108,8 +107,6 @@ bool EstimateTwoViewInfoCalibrated(
                             normalized_correspondences,
                             &relative_pose,
                             &summary)) {
-    VLOG(2) << "Could not estimate a relative pose for " << view1.Name()
-            << " and " << view2.Name();
     return false;
   }
 
@@ -118,8 +115,8 @@ bool EstimateTwoViewInfoCalibrated(
   // Set the twoview info.
   twoview_info->rotation_2 = rotation.angle() * rotation.axis();
   twoview_info->position_2 = relative_pose.position;
-  twoview_info->focal_length_1 = view1.Camera().FocalLength();
-  twoview_info->focal_length_2 = view1.Camera().FocalLength();
+  twoview_info->focal_length_1 = intrinsics1.focal_length;
+  twoview_info->focal_length_2 = intrinsics2.focal_length;
   twoview_info->num_3d_points =
       NumTriangulatedFeatures(normalized_correspondences,
                               relative_pose.rotation,
@@ -133,18 +130,18 @@ bool EstimateTwoViewInfoCalibrated(
 
 bool EstimateTwoViewInfoUncalibrated(
     const EstimateTwoViewInfoOptions& options,
-    const View& view1,
-    const View& view2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
   // Normalize features w.r.t principal point.
   std::vector<FeatureCorrespondence> centered_correspondences(
       correspondences.size());
-  const Vector2d principal_point1(view1.Camera().PrincipalPointX(),
-                                  view1.Camera().PrincipalPointY());
-  const Vector2d principal_point2(view1.Camera().PrincipalPointX(),
-                                  view1.Camera().PrincipalPointY());
+  const Vector2d principal_point1(intrinsics1.principal_point[0],
+                                  intrinsics1.principal_point[1]);
+  const Vector2d principal_point2(intrinsics1.principal_point[0],
+                                  intrinsics1.principal_point[1]);
   for (int i = 0; i < correspondences.size(); i++) {
     centered_correspondences[i].feature1 =
         correspondences[i].feature1 - principal_point1;
@@ -167,8 +164,6 @@ bool EstimateTwoViewInfoUncalibrated(
                                         centered_correspondences,
                                         &relative_pose,
                                         &summary)) {
-    VLOG(2) << "Could not estimate a relative pose for " << view1.Name()
-            << " and " << view2.Name();
     return false;
   }
 
@@ -202,16 +197,16 @@ bool EstimateTwoViewInfoUncalibrated(
 
 bool EstimateTwoViewInfo(
     const EstimateTwoViewInfoOptions& options,
-    const View& view1,
-    const View& view2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
   CHECK_NOTNULL(twoview_info);
   CHECK_NOTNULL(inlier_indices)->clear();
 
-  const bool view1_focal_length_set = view1.Metadata().focal_length.is_set;
-  const bool view2_focal_length_set = view2.Metadata().focal_length.is_set;
+  const bool view1_focal_length_set = intrinsics1.focal_length != 1.0;
+  const bool view2_focal_length_set = intrinsics2.focal_length != 1.0;
 
   // Early exit if applicable.
   if (correspondences.size() < options.min_triangulated_points) {
@@ -223,8 +218,8 @@ bool EstimateTwoViewInfo(
   // Case where both views are calibrated.
   if (view1_focal_length_set && view2_focal_length_set) {
     return EstimateTwoViewInfoCalibrated(options,
-                                         view1,
-                                         view2,
+                                         intrinsics1,
+                                         intrinsics2,
                                          correspondences,
                                          twoview_info,
                                          inlier_indices);
@@ -236,8 +231,8 @@ bool EstimateTwoViewInfo(
                     "calibrated has not been implemented yet. Treating both "
                     "views as uncalibrated instead.";
     return EstimateTwoViewInfoCalibrated(options,
-                                         view1,
-                                         view2,
+                                         intrinsics1,
+                                         intrinsics2,
                                          correspondences,
                                          twoview_info,
                                          inlier_indices);
@@ -245,8 +240,8 @@ bool EstimateTwoViewInfo(
 
   // Assume both views are uncalibrated.
   return EstimateTwoViewInfoUncalibrated(options,
-                                         view1,
-                                         view2,
+                                         intrinsics1,
+                                         intrinsics2,
                                          correspondences,
                                          twoview_info,
                                          inlier_indices);

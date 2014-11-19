@@ -40,9 +40,9 @@
 
 namespace theia {
 
+struct CameraIntrinsics;
 struct FeatureCorrespondence;
 struct TwoViewInfo;
-class View;
 
 // Options for estimating two view infos.
 struct EstimateTwoViewInfoOptions {
@@ -80,8 +80,8 @@ struct EstimateTwoViewInfoOptions {
 // not.
 bool EstimateTwoViewInfo(
     const EstimateTwoViewInfoOptions& options,
-    const View& view1,
-    const View& view2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices);

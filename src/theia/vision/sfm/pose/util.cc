@@ -41,7 +41,7 @@
 #include <vector>
 
 #include "theia/util/random.h"
-#include "theia/vision/sfm/camera/camera.h"
+#include "theia/vision/sfm/camera/camera_intrinsics.h"
 #include "theia/vision/sfm/feature_correspondence.h"
 
 namespace theia {
@@ -55,11 +55,11 @@ using Eigen::Vector4d;
 
 namespace {
 
-void NormalizeFeature(const Camera& camera, Vector2d* feature) {
-  feature->y() = (feature->y() - camera.PrincipalPointY()) /
-                       (camera.FocalLength() * camera.AspectRatio());
-  feature->x() = (feature->x() - camera.Skew() * feature->y() -
-                  camera.PrincipalPointX()) / camera.FocalLength();
+void NormalizeFeature(const CameraIntrinsics& intrinsics, Vector2d* feature) {
+  feature->y() = (feature->y() - intrinsics.principal_point[1]) /
+                 (intrinsics.focal_length * intrinsics.aspect_ratio);
+  feature->x() = (feature->x() - intrinsics.skew * feature->y() -
+                  intrinsics.principal_point[0]) / intrinsics.focal_length;
 }
 
 }  // namespace
@@ -145,15 +145,15 @@ Matrix3d ProjectToRotationMatrix(const Matrix3d& matrix) {
 }
 
 void NormalizeFeatures(
-    const Camera& camera1,
-    const Camera& camera2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences) {
   *CHECK_NOTNULL(normalized_correspondences) = correspondences;
 
   for (int i = 0; i < correspondences.size(); i++) {
-    NormalizeFeature(camera1, &normalized_correspondences->at(i).feature1);
-    NormalizeFeature(camera2, &normalized_correspondences->at(i).feature2);
+    NormalizeFeature(intrinsics1, &normalized_correspondences->at(i).feature1);
+    NormalizeFeature(intrinsics2, &normalized_correspondences->at(i).feature2);
   }
 }
 

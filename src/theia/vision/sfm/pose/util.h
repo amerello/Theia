@@ -41,6 +41,7 @@
 namespace theia {
 
 class Camera;
+struct CameraIntrinsics;
 struct FeatureCorrespondence;
 
 // Calculates Sampson distance for two correspondances and an essential or
@@ -73,8 +74,8 @@ Eigen::Matrix3d ProjectToRotationMatrix(const Eigen::Matrix3d& matrix);
 // Normalizes pixel coordinate features in correspondences with the camera
 // intrinsics.
 void NormalizeFeatures(
-    const Camera& camera1,
-    const Camera& camera2,
+    const CameraIntrinsics& intrinsics1,
+    const CameraIntrinsics& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences);
 
