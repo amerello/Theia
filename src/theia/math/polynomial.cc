@@ -392,25 +392,28 @@ bool FindRealPolynomialRootsSturm(const VectorXd& coeffs,
   return true;
 }
 
-bool FindRealPolynomialRootsJenkinsTraub(const Eigen::VectorXd& coeffs,
-                                         Eigen::VectorXd* real_roots) {
+bool FindRealPolynomialRootsJenkinsTraub(const VectorXd& coeffs,
+                                         VectorXd* real_roots) {
+  CHECK_NOTNULL(real_roots);
   VectorXd polynomial = RemoveLeadingZeros(coeffs);
   const int degree = polynomial.size() - 1;
   if (degree <= 4) {
     return FindRealPolynomialRoots(polynomial, real_roots);
   }
 
-  VectorXd real_roots_temp(degree);
   VectorXd complex_roots(degree);
-  std::vector<int> info(degree, 0);
+  int info[degree];
 
   Rpoly::Rpoly rpoly;
+  real_roots->resize(degree);
   const int num_roots = rpoly.eval(polynomial.data(),
                                    degree,
-                                   real_roots_temp.data(),
+                                   real_roots->data(),
                                    complex_roots.data(),
-                                   info.data());
-  *real_roots = real_roots_temp.head(num_roots);
+                                   info);
+  if (real_roots->size() != num_roots) {
+    real_roots->conservativeResize(num_roots);
+  }
   return num_roots > 0;
 }
 

@@ -405,8 +405,6 @@ TEST(Polynomial, JenkinsTraubManyRoots) {
   }
 }
 
-
-
 TEST(Polynomial, FindRealRootIterativeTest) {
   VectorXd polynomial(6);
   // (x - 3) * (x + 4) * (x + 5) * (x - 6) * (x + 7)

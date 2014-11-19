@@ -43,7 +43,7 @@ namespace theia {
 using Eigen::Vector2d;
 
 static const int kNumTrials = 1;
-static const double kTolerance = 1e-10;
+static const double kTolerance = 1e-8;
 
 void TestRadialDistortion(const double k1, const double k2) {
   for (int i = 0; i < kNumTrials; i++) {

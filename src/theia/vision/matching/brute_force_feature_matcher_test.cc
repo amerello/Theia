@@ -86,7 +86,7 @@ TEST(BruteForceFeatureMatcherTest, Threshold) {
 
   // Set one descriptor to be far away so that the max matching threshold is
   // met.
-  desc2[9] = VectorXf::Zero(kNumDescriptorDimensions);
+  desc2[9] = VectorXf::Constant(kNumDescriptorDimensions, 5e8);
 
   // Set options.
   FeatureMatcherOptions options;
