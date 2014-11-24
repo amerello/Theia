@@ -355,7 +355,8 @@ bool FreakDescriptorExtractor::ComputeDescriptors(
     std::vector<Keypoint>* keypoints,
     std::vector<Eigen::BinaryVectorX>* descriptors) {
   Image<uchar> uchar_image(image.AsGrayscaleImage());
-  Image<uchar> img_integral = uchar_image.Integrate();
+  Image<int> img_integral;
+  uchar_image.Integrate(&img_integral);
 
   // used to save pattern scale index corresponding to each keypoints
   std::vector<int> kp_scale_idx(keypoints->size());
@@ -487,7 +488,7 @@ bool FreakDescriptorExtractor::DetectAndExtractDescriptors(
 
 // Simply take average on a square patch, not evengaussian approx.
 uchar FreakDescriptorExtractor::MeanIntensity(
-    const Image<uchar>& image, const Image<uchar>& integral, const float kp_x,
+    const Image<uchar>& image, const Image<int>& integral, const float kp_x,
     const float kp_y, const unsigned int scale, const unsigned int rot,
     const unsigned int point) const {
   // get point position in image

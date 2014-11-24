@@ -448,7 +448,8 @@ bool BriskDescriptorExtractor::ComputeDescriptors(
   // first, calculate the integral image over the whole image:
   // current integral image
   Image<uchar> uchar_image(image.AsGrayscaleImage());
-  Image<int> _integral = uchar_image.Integrate<int>();
+  Image<int> _integral;
+  uchar_image.Integrate(&_integral);
   int* _values = new int[points_];  // for temporary use
 
   // resize the descriptors:

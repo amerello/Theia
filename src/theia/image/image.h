@@ -62,6 +62,7 @@ template <typename T> class Image {
 
   // Read from file.
   explicit Image(const std::string& filename);
+  Image(const int width, const int height, const int channels);
 
   // Copy function. This is a deep copy of the image.
   Image(const Image<T>& image_to_copy);
@@ -110,9 +111,13 @@ template <typename T> class Image {
 
   // Compute the integral image where pixel (x, y) is equal to the sum of all
   // values in the rectangle from (0, 0) to (x, y) non-inclusive. This means
-  // that the first row and column are all zeros.
-  template <typename D = T>
-  Image<D> Integrate() const;
+  // that the first row and column are all zeros, and the returned integral
+  // image is one pixel wider and taller than the caller.
+  //
+  // NOTE: This method should be called with precise number types such as double
+  // otherwise floating roundoff errors are sure to occur.
+  template <typename D>
+  void Integrate(Image<D>* integral) const;
 
   // Computes a fast approximate gaussian blur of te image.
   void ApproximateGaussianBlur(const double sigma);
@@ -160,6 +165,11 @@ template <typename T> Image<T>::Image(const std::string& filename) {
 template <typename T> Image<T>::Image(const Image<T>& image_to_copy) {
   image_ = image_to_copy.image_;
   exif_parser_ = image_to_copy.exif_parser_;
+}
+
+template <typename T>
+Image<T>::Image(const int width, const int height, const int channels) {
+  image_.resize(width, height, 1, channels);
 }
 
 // Copy function. This is a deep copy of the image.
@@ -318,29 +328,25 @@ template <typename T> void Image<T>::TwoThirdsSample(Image<T>* dest) const {
 
 template <typename T>
 template <typename D>
-Image<D> Image<T>::Integrate() const {
-  Image<D> integral(*this);
-  cimg_library::CImg<D>& integral_image = integral.image_;
+void Image<T>::Integrate(Image<D>* integral) const {
+  integral->Resize(Rows() + 1, Cols() + 1);
 
-  for (int i = 0; i < image_.spectrum(); i++) {
-    // Do the first row.
-    for (int c = 1; c < image_.width(); c++) {
-      integral_image(c, 0, 0, i) += integral_image(c - 1, 0, 0, i);
+  for (int i = 0; i < Channels(); i++) {
+    // Fill the first row with zeros.
+    for (int x = 0; x < Width(); x++) {
+      (*integral)(x, 0, i) = 0;
     }
 
-    // Do the first column.
-    for (int r = 1; r < image_.height(); r++) {
-      integral_image(0, r, 0, i) += integral_image(0, r - 1, 0, i);
-    }
-
-    for (int r = 1; r < image_.height(); r++) {
-      for (int c = 1; c < image_.width(); c++) {
-        integral_image(c, r, 0, i) += integral_image(c - 1, r, 0, i);
+    for (int y = 1; y <= Height(); y++) {
+      // This variable is to correct floating point round off.
+      D sum(0);
+      (*integral)(0, y, i) = 0;
+      for (int x = 1; x <= Width(); x++) {
+        sum += static_cast<D>((*this)(x - 1, y - 1, i));
+        (*integral)(x, y, i) = (*integral)(x, y - 1, i) + sum;
       }
     }
   }
-
-  return integral;
 }
 
 template <typename T>

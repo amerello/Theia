@@ -84,7 +84,7 @@ class FreakDescriptorExtractor : public BinaryDescriptorExtractor {
     std::vector<Eigen::BinaryVectorX>* descriptors);
 
  private:
-  uchar MeanIntensity(const Image<uchar>& image, const Image<uchar>& integral,
+  uchar MeanIntensity(const Image<uchar>& image, const Image<int>& integral,
                       const float kp_x, const float kp_y,
                       const unsigned int scale, const unsigned int rot,
                       const unsigned int point) const;

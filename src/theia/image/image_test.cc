@@ -33,6 +33,7 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <cimg/CImg.h>
+#include <Eigen/Core>
 #include <gflags/gflags.h>
 #include <stdio.h>
 #include <string>
@@ -147,6 +148,29 @@ TEST(Image, FocalLengthEXIF) {
   double focal_length = 0;
   EXPECT_TRUE(exif_img.FocalLengthPixels(&focal_length));
   EXPECT_NEAR(focal_length, 1304.84, 0.1);
+}
+
+TEST(Image, IntegralImage) {
+  const FloatImage img = FloatImage(img_filename).AsGrayscaleImage();
+  Image<double> integral_img;
+  img.Integrate(&integral_img);
+
+  // Check the integral image over 100 trials;
+  for (int i = 0; i < 1000; i++) {
+    InitRandomGenerator();
+    const int x = RandInt(1, img.Cols());
+    const int y = RandInt(1, img.Rows());
+
+    // Check the integral.
+    double sum = 0;
+    for (int r = 0; r < y; r++) {
+      for (int c = 0; c < x; c++) {
+        sum += img(c, r);
+      }
+    }
+
+    EXPECT_DOUBLE_EQ(integral_img(x, y), sum);
+  }
 }
 
 }  // namespace theia
